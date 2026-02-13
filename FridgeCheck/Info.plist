@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>NSCameraUsageDescription</key>
+    <string>FridgeCheck needs camera access to scan your fridge and identify ingredients.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>FridgeCheck needs photo library access so you can select fridge photos for ingredient analysis.</string>
+</dict>
+</plist>

@@ -1,0 +1,539 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000001 /* FridgeCheckApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000101 /* FridgeCheckApp.swift */; };
+		A00000000000000000000002 /* Ingredient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000102 /* Ingredient.swift */; };
+		A00000000000000000000003 /* Recipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000103 /* Recipe.swift */; };
+		A00000000000000000000004 /* PantryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000104 /* PantryItem.swift */; };
+		A00000000000000000000005 /* ShoppingListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000105 /* ShoppingListItem.swift */; };
+		A00000000000000000000006 /* MealPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000106 /* MealPlan.swift */; };
+		A00000000000000000000007 /* ScanRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000107 /* ScanRecord.swift */; };
+		A00000000000000000000008 /* UserPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000108 /* UserPreferences.swift */; };
+		A00000000000000000000009 /* ClaudeAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000109 /* ClaudeAPIService.swift */; };
+		A0000000000000000000000A /* ImageService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010A /* ImageService.swift */; };
+		A0000000000000000000000B /* ScanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010B /* ScanViewModel.swift */; };
+		A0000000000000000000000C /* PantryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010C /* PantryViewModel.swift */; };
+		A0000000000000000000000D /* RecipeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010D /* RecipeViewModel.swift */; };
+		A0000000000000000000000E /* ShoppingListViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010E /* ShoppingListViewModel.swift */; };
+		A0000000000000000000000F /* MealPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000010F /* MealPlanViewModel.swift */; };
+		A00000000000000000000010 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000110 /* MainTabView.swift */; };
+		A00000000000000000000011 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000111 /* HomeView.swift */; };
+		A00000000000000000000012 /* CameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000112 /* CameraView.swift */; };
+		A00000000000000000000013 /* ScanResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000113 /* ScanResultsView.swift */; };
+		A00000000000000000000014 /* RecipeSuggestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000114 /* RecipeSuggestionsView.swift */; };
+		A00000000000000000000015 /* PantryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000115 /* PantryView.swift */; };
+		A00000000000000000000016 /* AddPantryItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000116 /* AddPantryItemView.swift */; };
+		A00000000000000000000017 /* RecipeListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000117 /* RecipeListView.swift */; };
+		A00000000000000000000018 /* FavoritesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000118 /* FavoritesView.swift */; };
+		A00000000000000000000019 /* ShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000119 /* ShoppingListView.swift */; };
+		A0000000000000000000001A /* MealPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011A /* MealPlanView.swift */; };
+		A0000000000000000000001B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011B /* SettingsView.swift */; };
+		A0000000000000000000001C /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011C /* Extensions.swift */; };
+		A0000000000000000000001D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011D /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A00000000000000000000101 /* FridgeCheckApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FridgeCheckApp.swift; sourceTree = "<group>"; };
+		A00000000000000000000102 /* Ingredient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Ingredient.swift; sourceTree = "<group>"; };
+		A00000000000000000000103 /* Recipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Recipe.swift; sourceTree = "<group>"; };
+		A00000000000000000000104 /* PantryItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PantryItem.swift; sourceTree = "<group>"; };
+		A00000000000000000000105 /* ShoppingListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListItem.swift; sourceTree = "<group>"; };
+		A00000000000000000000106 /* MealPlan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlan.swift; sourceTree = "<group>"; };
+		A00000000000000000000107 /* ScanRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanRecord.swift; sourceTree = "<group>"; };
+		A00000000000000000000108 /* UserPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPreferences.swift; sourceTree = "<group>"; };
+		A00000000000000000000109 /* ClaudeAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClaudeAPIService.swift; sourceTree = "<group>"; };
+		A0000000000000000000010A /* ImageService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageService.swift; sourceTree = "<group>"; };
+		A0000000000000000000010B /* ScanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanViewModel.swift; sourceTree = "<group>"; };
+		A0000000000000000000010C /* PantryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PantryViewModel.swift; sourceTree = "<group>"; };
+		A0000000000000000000010D /* RecipeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeViewModel.swift; sourceTree = "<group>"; };
+		A0000000000000000000010E /* ShoppingListViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListViewModel.swift; sourceTree = "<group>"; };
+		A0000000000000000000010F /* MealPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanViewModel.swift; sourceTree = "<group>"; };
+		A00000000000000000000110 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		A00000000000000000000111 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		A00000000000000000000112 /* CameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraView.swift; sourceTree = "<group>"; };
+		A00000000000000000000113 /* ScanResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsView.swift; sourceTree = "<group>"; };
+		A00000000000000000000114 /* RecipeSuggestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeSuggestionsView.swift; sourceTree = "<group>"; };
+		A00000000000000000000115 /* PantryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PantryView.swift; sourceTree = "<group>"; };
+		A00000000000000000000116 /* AddPantryItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddPantryItemView.swift; sourceTree = "<group>"; };
+		A00000000000000000000117 /* RecipeListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecipeListView.swift; sourceTree = "<group>"; };
+		A00000000000000000000118 /* FavoritesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesView.swift; sourceTree = "<group>"; };
+		A00000000000000000000119 /* ShoppingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListView.swift; sourceTree = "<group>"; };
+		A0000000000000000000011A /* MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanView.swift; sourceTree = "<group>"; };
+		A0000000000000000000011B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A0000000000000000000011C /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		A0000000000000000000011D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A0000000000000000000011E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A00000000000000000000200 /* FridgeCheck.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FridgeCheck.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A00000000000000000000300 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A00000000000000000000400 = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000401 /* FridgeCheck */,
+				A00000000000000000000410 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A00000000000000000000401 /* FridgeCheck */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000101 /* FridgeCheckApp.swift */,
+				A00000000000000000000402 /* Models */,
+				A00000000000000000000403 /* Services */,
+				A00000000000000000000404 /* ViewModels */,
+				A00000000000000000000405 /* Views */,
+				A00000000000000000000413 /* Utilities */,
+				A0000000000000000000011D /* Assets.xcassets */,
+				A0000000000000000000011E /* Info.plist */,
+			);
+			path = FridgeCheck;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000402 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000102 /* Ingredient.swift */,
+				A00000000000000000000103 /* Recipe.swift */,
+				A00000000000000000000104 /* PantryItem.swift */,
+				A00000000000000000000105 /* ShoppingListItem.swift */,
+				A00000000000000000000106 /* MealPlan.swift */,
+				A00000000000000000000107 /* ScanRecord.swift */,
+				A00000000000000000000108 /* UserPreferences.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000403 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000109 /* ClaudeAPIService.swift */,
+				A0000000000000000000010A /* ImageService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000404 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000010B /* ScanViewModel.swift */,
+				A0000000000000000000010C /* PantryViewModel.swift */,
+				A0000000000000000000010D /* RecipeViewModel.swift */,
+				A0000000000000000000010E /* ShoppingListViewModel.swift */,
+				A0000000000000000000010F /* MealPlanViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000405 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000110 /* MainTabView.swift */,
+				A00000000000000000000406 /* Home */,
+				A00000000000000000000407 /* Scan */,
+				A00000000000000000000408 /* Pantry */,
+				A00000000000000000000409 /* Recipes */,
+				A0000000000000000000040A /* ShoppingList */,
+				A0000000000000000000040B /* MealPlan */,
+				A0000000000000000000040C /* Settings */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000406 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000111 /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000407 /* Scan */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000112 /* CameraView.swift */,
+				A00000000000000000000113 /* ScanResultsView.swift */,
+				A00000000000000000000114 /* RecipeSuggestionsView.swift */,
+			);
+			path = Scan;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000408 /* Pantry */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000115 /* PantryView.swift */,
+				A00000000000000000000116 /* AddPantryItemView.swift */,
+			);
+			path = Pantry;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000409 /* Recipes */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000117 /* RecipeListView.swift */,
+				A00000000000000000000118 /* FavoritesView.swift */,
+			);
+			path = Recipes;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000040A /* ShoppingList */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000119 /* ShoppingListView.swift */,
+			);
+			path = ShoppingList;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000040B /* MealPlan */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000011A /* MealPlanView.swift */,
+			);
+			path = MealPlan;
+			sourceTree = "<group>";
+		};
+		A0000000000000000000040C /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000011B /* SettingsView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000410 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A00000000000000000000200 /* FridgeCheck.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A00000000000000000000413 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+				A0000000000000000000011C /* Extensions.swift */,
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A00000000000000000000500 /* FridgeCheck */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A00000000000000000000700 /* Build configuration list for PBXNativeTarget "FridgeCheck" */;
+			buildPhases = (
+				A00000000000000000000600 /* Sources */,
+				A00000000000000000000300 /* Frameworks */,
+				A00000000000000000000601 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FridgeCheck;
+			productName = FridgeCheck;
+			productReference = A00000000000000000000200 /* FridgeCheck.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A00000000000000000000800 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A00000000000000000000500 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A00000000000000000000701 /* Build configuration list for PBXProject "FridgeCheck" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A00000000000000000000400;
+			productRefGroup = A00000000000000000000410 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A00000000000000000000500 /* FridgeCheck */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A00000000000000000000601 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0000000000000000000001D /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A00000000000000000000600 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000001 /* FridgeCheckApp.swift in Sources */,
+				A00000000000000000000002 /* Ingredient.swift in Sources */,
+				A00000000000000000000003 /* Recipe.swift in Sources */,
+				A00000000000000000000004 /* PantryItem.swift in Sources */,
+				A00000000000000000000005 /* ShoppingListItem.swift in Sources */,
+				A00000000000000000000006 /* MealPlan.swift in Sources */,
+				A00000000000000000000007 /* ScanRecord.swift in Sources */,
+				A00000000000000000000008 /* UserPreferences.swift in Sources */,
+				A00000000000000000000009 /* ClaudeAPIService.swift in Sources */,
+				A0000000000000000000000A /* ImageService.swift in Sources */,
+				A0000000000000000000000B /* ScanViewModel.swift in Sources */,
+				A0000000000000000000000C /* PantryViewModel.swift in Sources */,
+				A0000000000000000000000D /* RecipeViewModel.swift in Sources */,
+				A0000000000000000000000E /* ShoppingListViewModel.swift in Sources */,
+				A0000000000000000000000F /* MealPlanViewModel.swift in Sources */,
+				A00000000000000000000010 /* MainTabView.swift in Sources */,
+				A00000000000000000000011 /* HomeView.swift in Sources */,
+				A00000000000000000000012 /* CameraView.swift in Sources */,
+				A00000000000000000000013 /* ScanResultsView.swift in Sources */,
+				A00000000000000000000014 /* RecipeSuggestionsView.swift in Sources */,
+				A00000000000000000000015 /* PantryView.swift in Sources */,
+				A00000000000000000000016 /* AddPantryItemView.swift in Sources */,
+				A00000000000000000000017 /* RecipeListView.swift in Sources */,
+				A00000000000000000000018 /* FavoritesView.swift in Sources */,
+				A00000000000000000000019 /* ShoppingListView.swift in Sources */,
+				A0000000000000000000001A /* MealPlanView.swift in Sources */,
+				A0000000000000000000001B /* SettingsView.swift in Sources */,
+				A0000000000000000000001C /* Extensions.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A00000000000000000000901 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A00000000000000000000902 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A00000000000000000000903 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4RQDL357NU;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FridgeCheck/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fridgecheck.app;
+				PRODUCT_NAME = FridgeCheck;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		A00000000000000000000904 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4RQDL357NU;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FridgeCheck/Info.plist;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.fridgecheck.app;
+				PRODUCT_NAME = FridgeCheck;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A00000000000000000000700 /* Build configuration list for PBXNativeTarget "FridgeCheck" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000903 /* Debug */,
+				A00000000000000000000904 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A00000000000000000000701 /* Build configuration list for PBXProject "FridgeCheck" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A00000000000000000000901 /* Debug */,
+				A00000000000000000000902 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A00000000000000000000800 /* Project object */;
+}
