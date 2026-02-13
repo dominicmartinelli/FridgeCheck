@@ -5,18 +5,18 @@ import SwiftData
 final class ScanRecord {
     var id: UUID
     var date: Date
-    @Attribute(.externalStorage) var imageData: Data
+    @Attribute(.externalStorage) var imageDataItems: [Data]
     var detectedIngredients: [String]
     var recipes: [Recipe]
 
     init(
-        imageData: Data,
+        imageDataItems: [Data],
         detectedIngredients: [String] = [],
         recipes: [Recipe] = []
     ) {
         self.id = UUID()
         self.date = Date()
-        self.imageData = imageData
+        self.imageDataItems = imageDataItems
         self.detectedIngredients = detectedIngredients
         self.recipes = recipes
     }

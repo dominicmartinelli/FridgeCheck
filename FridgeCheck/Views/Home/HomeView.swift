@@ -153,7 +153,8 @@ struct HomeView: View {
                 HStack(spacing: 12) {
                     ForEach(Array(recentScans.prefix(5))) { scan in
                         VStack(spacing: 8) {
-                            if let uiImage = UIImage(data: scan.imageData) {
+                            if let firstData = scan.imageDataItems.first,
+                               let uiImage = UIImage(data: firstData) {
                                 Image(uiImage: uiImage)
                                     .resizable()
                                     .scaledToFill()

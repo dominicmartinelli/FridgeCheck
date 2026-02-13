@@ -11,7 +11,7 @@ struct DetectedIngredient: Identifiable {
 
 @Observable
 final class ScanViewModel {
-    var capturedImage: UIImage?
+    var capturedImages: [UIImage] = []
     var detectedIngredients: [DetectedIngredient] = []
     var suggestedRecipes: [Recipe] = []
     var isAnalyzing = false
@@ -21,14 +21,14 @@ final class ScanViewModel {
 
     private let apiService = ClaudeAPIService()
 
-    func analyzeImage(apiKey: String) async {
-        guard let image = capturedImage else { return }
+    func analyzeImages(apiKey: String) async {
+        guard !capturedImages.isEmpty else { return }
 
         isAnalyzing = true
         errorMessage = nil
 
         do {
-            let results = try await apiService.analyzeImage(image, apiKey: apiKey)
+            let results = try await apiService.analyzeImages(capturedImages, apiKey: apiKey)
             await MainActor.run {
                 self.detectedIngredients = results.map {
                     DetectedIngredient(
@@ -114,12 +114,19 @@ final class ScanViewModel {
         }
     }
 
+    func removeImage(at index: Int) {
+        guard capturedImages.indices.contains(index) else { return }
+        capturedImages.remove(at: index)
+    }
+
     func saveScanRecord(modelContext: ModelContext) {
-        guard let image = capturedImage,
-              let imageData = image.jpegData(compressionQuality: 0.6) else { return }
+        guard !capturedImages.isEmpty else { return }
+
+        let imageDataItems = capturedImages.compactMap { $0.jpegData(compressionQuality: 0.6) }
+        guard !imageDataItems.isEmpty else { return }
 
         let record = ScanRecord(
-            imageData: imageData,
+            imageDataItems: imageDataItems,
             detectedIngredients: detectedIngredients.map(\.name),
             recipes: suggestedRecipes
         )
@@ -127,7 +134,7 @@ final class ScanViewModel {
     }
 
     func reset() {
-        capturedImage = nil
+        capturedImages = []
         detectedIngredients = []
         suggestedRecipes = []
         isAnalyzing = false

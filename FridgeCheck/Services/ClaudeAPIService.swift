@@ -57,20 +57,33 @@ actor ClaudeAPIService {
         }
     }
 
-    func analyzeImage(_ image: UIImage, apiKey: String) async throws -> [IngredientResult] {
-        logger.info("Starting image analysis...")
+    func analyzeImages(_ images: [UIImage], apiKey: String) async throws -> [IngredientResult] {
+        logger.info("Starting image analysis for \(images.count) image(s)...")
         guard !apiKey.isEmpty else {
             logger.error("No API key set")
             throw APIError.noAPIKey
         }
-        let resized = Self.resizeImage(image, maxDimension: 1536)
-        guard let imageData = resized.jpegData(compressionQuality: 0.6) else { throw APIError.invalidImage }
-        logger.debug("Image size: \(imageData.count) bytes (resized from \(Int(image.size.width))x\(Int(image.size.height)) to \(Int(resized.size.width))x\(Int(resized.size.height)))")
+        guard !images.isEmpty else { throw APIError.invalidImage }
 
-        let base64Image = imageData.base64EncodedString()
+        var contentBlocks: [[String: Any]] = []
+
+        for (index, image) in images.enumerated() {
+            let resized = Self.resizeImage(image, maxDimension: 1536)
+            guard let imageData = resized.jpegData(compressionQuality: 0.6) else { throw APIError.invalidImage }
+            logger.debug("Image \(index + 1) size: \(imageData.count) bytes (\(Int(resized.size.width))x\(Int(resized.size.height)))")
+
+            contentBlocks.append([
+                "type": "image",
+                "source": [
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": imageData.base64EncodedString()
+                ]
+            ])
+        }
 
         let prompt = """
-        Analyze this image of a fridge/food items. Identify all visible food items and ingredients.
+        Analyze \(images.count == 1 ? "this image" : "these \(images.count) images") of a fridge/food items. Identify all visible food items and ingredients across all images. Deduplicate items that appear in multiple images.
 
         Return your response as valid JSON with this exact structure:
         {
@@ -86,26 +99,18 @@ actor ClaudeAPIService {
         Only return the JSON, no other text.
         """
 
+        contentBlocks.append([
+            "type": "text",
+            "text": prompt
+        ])
+
         let body: [String: Any] = [
             "model": model,
             "max_tokens": 2048,
             "messages": [
                 [
                     "role": "user",
-                    "content": [
-                        [
-                            "type": "image",
-                            "source": [
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": base64Image
-                            ]
-                        ],
-                        [
-                            "type": "text",
-                            "text": prompt
-                        ]
-                    ]
+                    "content": contentBlocks
                 ]
             ]
         ]

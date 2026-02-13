@@ -2,7 +2,7 @@ import SwiftUI
 import PhotosUI
 
 struct CameraPicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
+    @Binding var images: [UIImage]
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
@@ -27,7 +27,7 @@ struct CameraPicker: UIViewControllerRepresentable {
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
             if let image = info[.originalImage] as? UIImage {
-                parent.image = image
+                parent.images.append(image)
             }
             parent.dismiss()
         }
@@ -39,13 +39,13 @@ struct CameraPicker: UIViewControllerRepresentable {
 }
 
 struct PhotoPicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
+    @Binding var images: [UIImage]
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var config = PHPickerConfiguration()
         config.filter = .images
-        config.selectionLimit = 1
+        config.selectionLimit = 5
         let picker = PHPickerViewController(configuration: config)
         picker.delegate = context.coordinator
         return picker
@@ -67,12 +67,16 @@ struct PhotoPicker: UIViewControllerRepresentable {
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             parent.dismiss()
 
-            guard let provider = results.first?.itemProvider,
-                  provider.canLoadObject(ofClass: UIImage.self) else { return }
+            for result in results {
+                let provider = result.itemProvider
+                guard provider.canLoadObject(ofClass: UIImage.self) else { continue }
 
-            provider.loadObject(ofClass: UIImage.self) { image, _ in
-                DispatchQueue.main.async {
-                    self.parent.image = image as? UIImage
+                provider.loadObject(ofClass: UIImage.self) { image, _ in
+                    if let image = image as? UIImage {
+                        DispatchQueue.main.async {
+                            self.parent.images.append(image)
+                        }
+                    }
                 }
             }
         }

@@ -67,8 +67,8 @@ struct ScanResultsView: View {
             RecipeSuggestionsView(viewModel: viewModel)
         }
         .task {
-            if viewModel.capturedImage != nil && viewModel.detectedIngredients.isEmpty && !viewModel.isAnalyzing {
-                await viewModel.analyzeImage(apiKey: userPreferences?.apiKey ?? "")
+            if !viewModel.capturedImages.isEmpty && viewModel.detectedIngredients.isEmpty && !viewModel.isAnalyzing {
+                await viewModel.analyzeImages(apiKey: userPreferences?.apiKey ?? "")
             }
         }
     }
@@ -77,25 +77,27 @@ struct ScanResultsView: View {
 
     private var analyzingStateView: some View {
         VStack(spacing: 24) {
-            if let image = viewModel.capturedImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 120, height: 120)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(.ultraThinMaterial)
-                    }
-                    .overlay {
-                        ProgressView()
-                            .scaleEffect(1.5)
-                            .tint(.primary)
-                    }
+            HStack(spacing: 8) {
+                ForEach(Array(viewModel.capturedImages.prefix(3).enumerated()), id: \.offset) { _, image in
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 80, height: 80)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(.ultraThinMaterial)
+                        }
+                }
+            }
+            .overlay {
+                ProgressView()
+                    .scaleEffect(1.5)
+                    .tint(.primary)
             }
 
             VStack(spacing: 8) {
-                Text("Analyzing Image...")
+                Text("Analyzing \(viewModel.capturedImages.count) Photo\(viewModel.capturedImages.count == 1 ? "" : "s")...")
                     .font(.title3)
                     .fontWeight(.semibold)
 
@@ -116,11 +118,11 @@ struct ScanResultsView: View {
         ContentUnavailableView {
             Label("No Ingredients Detected", systemImage: "carrot")
         } description: {
-            Text("No ingredients could be identified in this image. Try taking a clearer photo with good lighting.")
+            Text("No ingredients could be identified. Try taking clearer photos with good lighting.")
         } actions: {
             Button("Try Again") {
                 Task {
-                    await viewModel.analyzeImage(apiKey: userPreferences?.apiKey ?? "")
+                    await viewModel.analyzeImages(apiKey: userPreferences?.apiKey ?? "")
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -160,30 +162,31 @@ struct ScanResultsView: View {
     // MARK: - Captured Image Header
 
     private var capturedImageHeader: some View {
-        Group {
-            if let image = viewModel.capturedImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 160)
-                    .clipped()
-                    .overlay(alignment: .bottomLeading) {
-                        LinearGradient(
-                            colors: [.clear, .black.opacity(0.5)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 60)
-                        .overlay(alignment: .bottomLeading) {
-                            Text("\(viewModel.detectedIngredients.count) ingredients found")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.bottom, 10)
+        VStack(spacing: 0) {
+            if !viewModel.capturedImages.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(viewModel.capturedImages.enumerated()), id: \.offset) { _, image in
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: viewModel.capturedImages.count == 1 ? UIScreen.main.bounds.width : 200, height: 140)
+                                .clipped()
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
                         }
                     }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
+
+                HStack {
+                    Text("\(viewModel.detectedIngredients.count) ingredients found from \(viewModel.capturedImages.count) photo\(viewModel.capturedImages.count == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal)
             }
         }
     }
@@ -360,7 +363,7 @@ private struct IngredientRow: View {
     NavigationStack {
         ScanResultsView(viewModel: {
             let vm = ScanViewModel()
-            vm.capturedImage = UIImage(systemName: "photo")
+            if let img = UIImage(systemName: "photo") { vm.capturedImages = [img] }
             return vm
         }())
     }
@@ -372,7 +375,7 @@ private struct IngredientRow: View {
         ScanResultsView(viewModel: {
             let vm = ScanViewModel()
             vm.isAnalyzing = true
-            vm.capturedImage = UIImage(systemName: "photo")
+            if let img = UIImage(systemName: "photo") { vm.capturedImages = [img] }
             return vm
         }())
     }
