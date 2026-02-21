@@ -109,7 +109,11 @@ struct RecipeSuggestionsView: View {
             LazyVStack(spacing: 16) {
                 ForEach(viewModel.suggestedRecipes, id: \.id) { recipe in
                     NavigationLink {
-                        RecipeDetailView(recipe: recipe)
+                        RecipeDetailView(
+                            recipe: recipe,
+                            isSaved: savedRecipeIDs.contains(recipe.id),
+                            onSave: { saveRecipe(recipe) }
+                        )
                     } label: {
                         RecipeCard(
                             recipe: recipe,
@@ -400,6 +404,14 @@ private struct FlowLayout: Layout {
 
 struct RecipeDetailView: View {
     let recipe: Recipe
+    var onSave: (() -> Void)? = nil
+    @State private var isSaved: Bool
+
+    init(recipe: Recipe, isSaved: Bool = true, onSave: (() -> Void)? = nil) {
+        self.recipe = recipe
+        self._isSaved = State(initialValue: isSaved)
+        self.onSave = onSave
+    }
 
     var body: some View {
         ScrollView {
@@ -501,14 +513,34 @@ struct RecipeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    recipe.isFavorite.toggle()
-                } label: {
-                    Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
-                        .foregroundStyle(recipe.isFavorite ? .red : .secondary)
+                HStack(spacing: 4) {
+                    if onSave != nil  {
+                        Button {
+                            handleSave()
+                        } label: {
+                            Image(systemName: isSaved ? "bookmark.fill" : "bookmark")
+                                .foregroundStyle(isSaved ? Color.accentColor : .secondary)
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .disabled(isSaved)
+                    }
+
+                    Button {
+                        if !isSaved { handleSave() }
+                        recipe.isFavorite.toggle()
+                    } label: {
+                        Image(systemName: recipe.isFavorite ? "heart.fill" : "heart")
+                            .foregroundStyle(recipe.isFavorite ? .red : .secondary)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
                 }
             }
         }
+    }
+
+    private func handleSave() {
+        onSave?()
+        isSaved = true
     }
 }
 
