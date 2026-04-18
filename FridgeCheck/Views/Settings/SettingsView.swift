@@ -4,21 +4,18 @@ import SwiftData
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var preferences: [UserPreferences]
+    @State private var auth = AuthService.shared
 
-    @State private var apiKey = ""
     @State private var servingSize = 2
     @State private var selectedDietary: Set<String> = []
     @State private var selectedAllergies: Set<String> = []
     @State private var selectedCuisines: Set<String> = []
     @State private var hasLoaded = false
-    @State private var showSavedConfirmation = false
-    @State private var isTesting = false
-    @State private var testResult: Bool?
+    @State private var prefs: UserPreferences?
+    @State private var showSignOutConfirm = false
 
-    private var userPreferences: UserPreferences {
-        if let existing = preferences.first {
-            return existing
-        }
+    private func ensurePreferences() -> UserPreferences {
+        if let existing = preferences.first { return existing }
         let new = UserPreferences()
         modelContext.insert(new)
         return new
@@ -27,70 +24,30 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
-                // API Key
+                // Account
                 Section {
-                    SecureField("Claude API Key", text: $apiKey)
-                        .textContentType(.password)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .submitLabel(.done)
-                        .onChange(of: apiKey) { _, newValue in
-                            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-                            userPreferences.apiKey = trimmed
-                            showSavedConfirmation = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                                withAnimation {
-                                    showSavedConfirmation = false
-                                }
-                            }
-                        }
-
-                    if showSavedConfirmation {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
-                            Text("Saved")
-                                .foregroundStyle(.green)
-                                .fontWeight(.medium)
-                        }
-                        .font(.subheadline)
-                        .transition(.opacity)
+                    HStack {
+                        Label("Signed In", systemImage: "person.crop.circle.fill")
+                        Spacer()
+                        Text(auth.userEmail ?? "Apple ID")
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
                     }
-
-                    Button {
-                        Task {
-                            await testAPIKey()
-                        }
+                    Button(role: .destructive) {
+                        showSignOutConfirm = true
                     } label: {
-                        HStack {
-                            Label("Test API Key", systemImage: "antenna.radiowaves.left.and.right")
-                            Spacer()
-                            if isTesting {
-                                ProgressView()
-                                    .controlSize(.small)
-                            } else if let testResult {
-                                Image(systemName: testResult ? "checkmark.circle.fill" : "xmark.circle.fill")
-                                    .foregroundStyle(testResult ? .green : .red)
-                            }
-                        }
+                        Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
-                    .disabled(apiKey.isEmpty || isTesting)
                 } header: {
-                    Text("API Configuration")
-                } footer: {
-                    if let testResult, !testResult {
-                        Text("Key test failed. Check that the key is correct and your account has active billing.")
-                            .foregroundStyle(.red)
-                    } else {
-                        Text("Your API key is stored locally on your device and saves automatically. Get one at console.anthropic.com")
-                    }
+                    Text("Account")
                 }
 
                 // Serving Size
                 Section("Serving Size") {
                     Stepper("\(servingSize) people", value: $servingSize, in: 1...12)
                         .onChange(of: servingSize) { _, newValue in
-                            userPreferences.servingSize = newValue
+                            prefs?.servingSize = newValue
                         }
                 }
 
@@ -105,7 +62,7 @@ struct SettingsView: View {
                                 } else {
                                     selectedDietary.remove(option)
                                 }
-                                userPreferences.dietaryRestrictions = Array(selectedDietary)
+                                prefs?.dietaryRestrictions = Array(selectedDietary)
                             }
                         ))
                     }
@@ -124,7 +81,7 @@ struct SettingsView: View {
                                 } else {
                                     selectedAllergies.remove(option)
                                 }
-                                userPreferences.allergies = Array(selectedAllergies)
+                                prefs?.allergies = Array(selectedAllergies)
                             }
                         ))
                     }
@@ -145,7 +102,7 @@ struct SettingsView: View {
                                 } else {
                                     selectedCuisines.remove(option)
                                 }
-                                userPreferences.cuisinePreferences = Array(selectedCuisines)
+                                prefs?.cuisinePreferences = Array(selectedCuisines)
                             }
                         ))
                     }
@@ -179,7 +136,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0.0")
+                        Text("1.1")
                             .foregroundStyle(.secondary)
                     }
                     HStack {
@@ -196,65 +153,32 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .onAppear {
                 if !hasLoaded {
+                    prefs = ensurePreferences()
                     loadPreferences()
                     hasLoaded = true
                 }
+            }
+            .confirmationDialog(
+                "Sign Out?",
+                isPresented: $showSignOutConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Sign Out", role: .destructive) {
+                    auth.signOut()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("You'll need to sign in again to use the app.")
             }
         }
     }
 
     private func loadPreferences() {
-        let prefs = userPreferences
-        apiKey = prefs.apiKey
+        guard let prefs else { return }
         servingSize = prefs.servingSize
         selectedDietary = Set(prefs.dietaryRestrictions)
         selectedAllergies = Set(prefs.allergies)
         selectedCuisines = Set(prefs.cuisinePreferences)
-    }
-
-    private func testAPIKey() async {
-        isTesting = true
-        testResult = nil
-
-        let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else {
-            testResult = false
-            isTesting = false
-            return
-        }
-
-        guard let url = URL(string: "https://api.anthropic.com/v1/messages") else {
-            testResult = false
-            isTesting = false
-            return
-        }
-
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(key, forHTTPHeaderField: "x-api-key")
-        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-
-        let body: [String: Any] = [
-            "model": "claude-sonnet-4-5-20250929",
-            "max_tokens": 1,
-            "messages": [["role": "user", "content": "test"]]
-        ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-            await MainActor.run {
-                testResult = status == 200
-                isTesting = false
-            }
-        } catch {
-            await MainActor.run {
-                testResult = false
-                isTesting = false
-            }
-        }
     }
 }
 

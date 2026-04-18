@@ -1,0 +1,8 @@
+config.toml
+fridgecheck-server
+fridgecheck-server-linux
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.env.mk

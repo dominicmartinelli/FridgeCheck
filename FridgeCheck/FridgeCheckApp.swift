@@ -3,9 +3,17 @@ import SwiftData
 
 @main
 struct FridgeCheckApp: App {
+    @State private var auth = AuthService.shared
+
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            Group {
+                if auth.isSignedIn {
+                    MainTabView()
+                } else {
+                    SignInView()
+                }
+            }
         }
         .modelContainer(for: [
             Ingredient.self,

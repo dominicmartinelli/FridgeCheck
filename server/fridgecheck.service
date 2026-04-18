@@ -1,0 +1,23 @@
+[Unit]
+Description=FridgeCheck API server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=fridgecheck
+Group=fridgecheck
+WorkingDirectory=/opt/fridgecheck
+ExecStart=/opt/fridgecheck/fridgecheck-server --config=/etc/fridgecheck/config.toml
+Restart=on-failure
+RestartSec=5s
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/fridgecheck /var/lib/fridgecheck
+
+[Install]
+WantedBy=multi-user.target

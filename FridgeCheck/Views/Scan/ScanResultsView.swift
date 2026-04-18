@@ -8,6 +8,7 @@ struct ScanResultsView: View {
     @Bindable var viewModel: ScanViewModel
     @State private var navigateToRecipes = false
     @State private var showAddedToPantryConfirmation = false
+    @State private var bannerTask: Task<Void, Never>?
 
     private var userPreferences: UserPreferences? {
         preferences.first
@@ -47,11 +48,6 @@ struct ScanResultsView: View {
         }
         .alert("Error", isPresented: $viewModel.showError) {
             Button("OK", role: .cancel) {}
-            if let _ = viewModel.errorMessage, userPreferences?.apiKey.isEmpty ?? true {
-                Button("Open Settings") {
-                    // In a full app this would navigate to settings
-                }
-            }
         } message: {
             if let errorMessage = viewModel.errorMessage {
                 Text(errorMessage)
@@ -68,7 +64,7 @@ struct ScanResultsView: View {
         }
         .task {
             if !viewModel.capturedImages.isEmpty && viewModel.detectedIngredients.isEmpty && !viewModel.isAnalyzing {
-                await viewModel.analyzeImages(apiKey: userPreferences?.apiKey ?? "")
+                await viewModel.analyzeImages(sessionToken: AuthService.shared.sessionToken ?? "")
             }
         }
     }
@@ -122,7 +118,7 @@ struct ScanResultsView: View {
         } actions: {
             Button("Try Again") {
                 Task {
-                    await viewModel.analyzeImages(apiKey: userPreferences?.apiKey ?? "")
+                    await viewModel.analyzeImages(sessionToken: AuthService.shared.sessionToken ?? "")
                 }
             }
             .buttonStyle(.borderedProminent)
@@ -220,7 +216,7 @@ struct ScanResultsView: View {
                         await viewModel.generateRecipes(
                             preferences: userPreferences,
                             pantryItems: pantryItems,
-                            apiKey: userPreferences?.apiKey ?? ""
+                            sessionToken: AuthService.shared.sessionToken ?? ""
                         )
                     }
                 } label: {
@@ -237,7 +233,10 @@ struct ScanResultsView: View {
                 Button {
                     viewModel.addIngredientsToPantry(modelContext: modelContext)
                     showAddedToPantryConfirmation = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                    bannerTask?.cancel()
+                    bannerTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(2500))
+                        guard !Task.isCancelled else { return }
                         withAnimation {
                             showAddedToPantryConfirmation = false
                         }

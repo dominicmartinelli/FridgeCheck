@@ -10,6 +10,7 @@ struct DetectedIngredient: Identifiable {
 }
 
 @Observable
+@MainActor
 final class ScanViewModel {
     var capturedImages: [UIImage] = []
     var detectedIngredients: [DetectedIngredient] = []
@@ -19,39 +20,35 @@ final class ScanViewModel {
     var errorMessage: String?
     var showError = false
 
-    private let apiService = ClaudeAPIService()
+    private let apiService = FridgeCheckAPIService()
 
-    func analyzeImages(apiKey: String) async {
+    func analyzeImages(sessionToken: String) async {
         guard !capturedImages.isEmpty else { return }
 
         isAnalyzing = true
         errorMessage = nil
 
         do {
-            let results = try await apiService.analyzeImages(capturedImages, apiKey: apiKey)
-            await MainActor.run {
-                self.detectedIngredients = results.map {
-                    DetectedIngredient(
-                        name: $0.name,
-                        category: $0.category,
-                        estimatedQuantity: $0.estimatedQuantity
-                    )
-                }
-                self.isAnalyzing = false
+            let results = try await apiService.analyzeImages(capturedImages, sessionToken: sessionToken)
+            self.detectedIngredients = results.map {
+                DetectedIngredient(
+                    name: $0.name,
+                    category: $0.category,
+                    estimatedQuantity: $0.estimatedQuantity
+                )
             }
+            self.isAnalyzing = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.showError = true
-                self.isAnalyzing = false
-            }
+            self.errorMessage = error.localizedDescription
+            self.showError = true
+            self.isAnalyzing = false
         }
     }
 
     func generateRecipes(
         preferences: UserPreferences?,
         pantryItems: [PantryItem],
-        apiKey: String
+        sessionToken: String
     ) async {
         let selectedIngredients = detectedIngredients.filter(\.isSelected).map(\.name)
         guard !selectedIngredients.isEmpty else { return }
@@ -67,32 +64,28 @@ final class ScanViewModel {
                 cuisinePreferences: preferences?.cuisinePreferences ?? [],
                 servingSize: preferences?.servingSize ?? 2,
                 pantryItems: pantryItems.map(\.name),
-                apiKey: apiKey
+                sessionToken: sessionToken
             )
 
-            await MainActor.run {
-                self.suggestedRecipes = results.map { result in
-                    Recipe(
-                        title: result.title,
-                        summary: result.summary,
-                        ingredients: result.ingredients,
-                        steps: result.steps,
-                        prepTime: result.prepTime,
-                        cookTime: result.cookTime,
-                        nutritionalInfo: result.nutritionalInfo,
-                        cuisineType: result.cuisineType,
-                        difficulty: result.difficulty,
-                        sourceIngredients: selectedIngredients
-                    )
-                }
-                self.isGeneratingRecipes = false
+            self.suggestedRecipes = results.map { result in
+                Recipe(
+                    title: result.title,
+                    summary: result.summary,
+                    ingredients: result.ingredients,
+                    steps: result.steps,
+                    prepTime: result.prepTime,
+                    cookTime: result.cookTime,
+                    nutritionalInfo: result.nutritionalInfo,
+                    cuisineType: result.cuisineType,
+                    difficulty: result.difficulty,
+                    sourceIngredients: selectedIngredients
+                )
             }
+            self.isGeneratingRecipes = false
         } catch {
-            await MainActor.run {
-                self.errorMessage = error.localizedDescription
-                self.showError = true
-                self.isGeneratingRecipes = false
-            }
+            self.errorMessage = error.localizedDescription
+            self.showError = true
+            self.isGeneratingRecipes = false
         }
     }
 

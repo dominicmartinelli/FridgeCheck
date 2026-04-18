@@ -50,6 +50,7 @@ final class MealPlanViewModel {
     func autoGenerateMealPlan(
         favorites: [Recipe],
         pantryItems: [PantryItem],
+        existingMealPlans: [MealPlan],
         modelContext: ModelContext
     ) {
         guard !favorites.isEmpty else { return }
@@ -57,7 +58,7 @@ final class MealPlanViewModel {
 
         for date in weekDates {
             for mealType in String.mealTypes {
-                let existing = mealsForDate(date, allMealPlans: [])
+                let existing = mealsForDate(date, allMealPlans: existingMealPlans)
                 let alreadyPlanned = existing.contains { $0.mealType == mealType }
                 if !alreadyPlanned {
                     let randomRecipe = favorites.randomElement()

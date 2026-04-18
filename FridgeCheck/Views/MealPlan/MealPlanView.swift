@@ -34,6 +34,7 @@ struct MealPlanView: View {
                             viewModel.autoGenerateMealPlan(
                                 favorites: favoriteRecipes,
                                 pantryItems: pantryItems,
+                                existingMealPlans: mealPlans,
                                 modelContext: modelContext
                             )
                         } label: {

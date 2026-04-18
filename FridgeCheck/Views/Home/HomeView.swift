@@ -1,11 +1,14 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeView: View {
+    @Binding var selectedTab: Int
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScanRecord.date, order: .reverse) private var recentScans: [ScanRecord]
     @Query(sort: \MealPlan.date) private var mealPlans: [MealPlan]
     @Query private var pantryItems: [PantryItem]
+    @State private var rerunViewModel: ScanViewModel?
 
     private var todaysMeals: [MealPlan] {
         let calendar = Calendar.current
@@ -22,7 +25,10 @@ struct HomeView: View {
             ScrollView {
                 VStack(spacing: 20) {
                     // Quick scan button
-                    quickScanSection
+                    Button { selectedTab = 2 } label: {
+                        quickScanSection
+                    }
+                    .buttonStyle(.plain)
 
                     // Today's meal plan
                     if !todaysMeals.isEmpty {
@@ -45,6 +51,14 @@ struct HomeView: View {
                 .padding()
             }
             .navigationTitle("Fridge Check")
+            .navigationDestination(isPresented: Binding(
+                get: { rerunViewModel != nil },
+                set: { if !$0 { rerunViewModel = nil } }
+            )) {
+                if let vm = rerunViewModel {
+                    ScanResultsView(viewModel: vm)
+                }
+            }
         }
     }
 
@@ -152,25 +166,44 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(Array(recentScans.prefix(5))) { scan in
-                        VStack(spacing: 8) {
-                            if let firstData = scan.imageDataItems.first,
-                               let uiImage = UIImage(data: firstData) {
-                                Image(uiImage: uiImage)
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 100, height: 100)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                        Button {
+                            let dataItems = scan.imageDataItems
+                            Task.detached(priority: .userInitiated) {
+                                let images = dataItems.compactMap { UIImage(data: $0) }
+                                await MainActor.run {
+                                    let vm = ScanViewModel()
+                                    vm.capturedImages = images
+                                    rerunViewModel = vm
+                                }
                             }
+                        } label: {
+                            VStack(spacing: 8) {
+                                ZStack(alignment: .topTrailing) {
+                                    if let firstData = scan.imageDataItems.first,
+                                       let uiImage = UIImage(data: firstData) {
+                                        Image(uiImage: uiImage)
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 100, height: 100)
+                                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    }
+                                    Image(systemName: "arrow.clockwise.circle.fill")
+                                        .font(.system(size: 22))
+                                        .foregroundStyle(.white, Color.accentColor)
+                                        .offset(x: 6, y: -6)
+                                }
 
-                            VStack(spacing: 2) {
-                                Text("\(scan.detectedIngredients.count) items")
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                Text(scan.date.formatted_relative)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                                VStack(spacing: 2) {
+                                    Text("\(scan.detectedIngredients.count) items")
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                    Text(scan.date.formatted_relative)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
                         }
+                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -221,7 +254,7 @@ private struct StatCard: View {
 }
 
 #Preview {
-    HomeView()
+    HomeView(selectedTab: .constant(0))
         .modelContainer(for: [
             UserPreferences.self, PantryItem.self, Recipe.self,
             ScanRecord.self, MealPlan.self
