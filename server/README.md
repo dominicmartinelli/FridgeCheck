@@ -50,10 +50,24 @@ curl http://localhost:8082/health
 
 ## One-time VM setup (same VM as shows)
 
+Before running any of the commands in this section or `make deploy`, create a
+gitignored `server/.env.mk` with your real host/user values. The `Makefile`
+auto-includes it and falls back to non-functional placeholders if absent:
+
+```makefile
+# server/.env.mk (gitignored)
+GCP_IP   = 10.0.0.42
+GCP_USER = alice
+BASTION  = 10.0.0.1
+```
+
+The examples below use `user@bastion` and `user@app-server` as stand-ins for
+`$(GCP_USER)@$(BASTION)` and `$(GCP_USER)@$(GCP_IP)`.
+
 SSH into the watchlist VM via the bastion and run:
 
 ```bash
-ssh -J dmartinelli@10.0.93.2 dmartinelli@10.128.0.3
+ssh -J user@bastion user@app-server
 sudo bash
 useradd --system --no-create-home --shell /usr/sbin/nologin fridgecheck || true
 install -d -o fridgecheck -g fridgecheck -m 755 /opt/fridgecheck
@@ -64,8 +78,8 @@ install -d -o root -g root -m 755 /etc/fridgecheck
 Install the systemd unit (one-time; the binary deploys via `make deploy`):
 
 ```bash
-sudo scp -J dmartinelli@10.0.93.2 fridgecheck.service \
-  dmartinelli@10.128.0.3:/tmp/
+sudo scp -J user@bastion fridgecheck.service \
+  user@app-server:/tmp/
 sudo mv /tmp/fridgecheck.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable fridgecheck
@@ -75,8 +89,8 @@ Copy your config:
 
 ```bash
 # On your Mac: create config.toml (fill in secrets), then:
-scp -J dmartinelli@10.0.93.2 config.toml dmartinelli@10.128.0.3:/tmp/fridgecheck.toml
-ssh -J dmartinelli@10.0.93.2 dmartinelli@10.128.0.3 \
+scp -J user@bastion config.toml user@app-server:/tmp/fridgecheck.toml
+ssh -J user@bastion user@app-server \
   'sudo install -m 600 -o fridgecheck -g fridgecheck /tmp/fridgecheck.toml /etc/fridgecheck/config.toml && rm /tmp/fridgecheck.toml'
 ```
 
@@ -102,7 +116,7 @@ make deploy
 Watch logs:
 
 ```bash
-ssh -J dmartinelli@10.0.93.2 dmartinelli@10.128.0.3 'sudo journalctl -u fridgecheck -f'
+ssh -J user@bastion user@app-server 'sudo journalctl -u fridgecheck -f'
 ```
 
 ## Quick smoke test

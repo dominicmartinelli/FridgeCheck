@@ -93,7 +93,7 @@ struct RecipeSuggestionsView: View {
         ContentUnavailableView {
             Label("No Recipes Yet", systemImage: "fork.knife")
         } description: {
-            Text("Could not generate recipe suggestions. Please check your API key and try again.")
+            Text("Could not generate recipe suggestions. Please try again.")
         } actions: {
             Button("Retry") {
                 // This will be re-triggered via the parent view

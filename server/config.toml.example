@@ -1,0 +1,46 @@
+# FridgeCheck server config. Copy to config.toml and fill in secrets.
+# In production this lives at /etc/fridgecheck/config.toml (mode 0600).
+# Fields marked REQUIRED must be set or startup validation fails.
+
+# Runtime environment label. Purely informational ("dev", "prod", etc).
+env = "dev"
+
+# Address the HTTP server binds to. ":8082" listens on all interfaces, port 8082.
+addr = ":8082"
+
+# Set true when running behind a reverse proxy (Caddy/nginx) so that client IPs
+# are read from X-Forwarded-For instead of the direct socket.
+behind_proxy = false
+
+# Path to the SQLite database file. Created on first run if missing.
+db_path = "./fridgecheck.db"
+
+# Directory for TLS certs / ACME state when terminating TLS directly.
+# Ignored when behind a proxy that terminates TLS (typical prod setup).
+cert_dir = "/var/lib/fridgecheck/certs"
+
+# REQUIRED. Symmetric secret used to sign session JWTs. Must be >= 32 chars.
+# Generate with: openssl rand -hex 32
+jwt_secret = "replace-with-output-of-openssl-rand-hex-32"
+
+# REQUIRED. Apple app bundle ID used to validate Sign in with Apple identity tokens.
+# Must exactly match the iOS app's bundle identifier.
+apple_bundle_id = "com.example.yourapp"
+
+# REQUIRED. Anthropic API key for proxied Claude calls. Starts with "sk-ant-".
+anthropic_api_key = "sk-ant-REPLACE_ME"
+
+# Fallback Claude model used when a per-endpoint model is unset.
+anthropic_model = "claude-sonnet-4-5-20250929"
+
+# Optional override for POST /v1/scan. Falls back to anthropic_model when empty.
+anthropic_scan_model = ""
+
+# Optional override for POST /v1/recipes. Falls back to anthropic_model when empty.
+anthropic_recipes_model = "claude-haiku-4-5-20251001"
+
+# Daily per-user quota for /v1/scan on the free tier. The "unlimited" tier bypasses this.
+free_tier_scans_per_day = 5
+
+# Daily per-user quota for /v1/recipes on the free tier. The "unlimited" tier bypasses this.
+free_tier_recipes_per_day = 20

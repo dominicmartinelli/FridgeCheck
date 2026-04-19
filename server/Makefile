@@ -1,8 +1,10 @@
 # Override these via environment or a local .env.mk (gitignored).
+# Put your real host/user values in server/.env.mk — it is auto-included below
+# and never committed. The placeholders here are intentionally non-functional.
 -include .env.mk
-GCP_IP     ?= 10.128.0.3
-GCP_USER   ?= dmartinelli
-BASTION    ?= 10.0.93.2
+GCP_IP     ?= your.app.server.ip
+GCP_USER   ?= your-ssh-user
+BASTION    ?= your.bastion.ip
 DEPLOY_DIR ?= /opt/fridgecheck
 SSH_KEY    ?= $(HOME)/.ssh/id_ed25519
 JUMP       := $(if $(BASTION),-J $(GCP_USER)@$(BASTION),)

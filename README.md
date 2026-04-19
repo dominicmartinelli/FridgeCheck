@@ -1,6 +1,6 @@
 # Fridge Check
 
-An iOS app that uses Claude's vision API to scan your fridge, identify ingredients, and suggest recipes.
+An iOS app that uses Claude's vision API to scan your fridge, identify ingredients, and suggest recipes. Authentication and all Claude calls are proxied through a small Go backend (`server/`) that enforces per-user daily quotas, so no API key ever leaves the backend.
 
 ## Features
 
@@ -16,24 +16,28 @@ An iOS app that uses Claude's vision API to scan your fridge, identify ingredien
 
 - **SwiftUI** with MVVM architecture
 - **SwiftData** for persistence
-- **Claude API** (claude-sonnet-4-5-20250929 vision) for image analysis and recipe generation
+- **Sign in with Apple** for auth (identity token exchanged for a session JWT stored in Keychain)
+- **Go backend** in the `server/` subdirectory that proxies Claude (`claude-sonnet-4-5-20250929`) and enforces quotas
 - iOS 17+ deployment target
 
 ## Setup
 
+The iOS client talks to the backend at `https://fridge.dkm.net` (see `FridgeCheck/Services/AppConfig.swift`). For the production app you don't need to run anything yourself — just sign in with Apple. For local development against your own backend, see `server/README.md`.
+
 1. Clone the repo and open `FridgeCheck.xcodeproj` in Xcode
-2. Set your development team in Signing & Capabilities
+2. Set your development team in Signing & Capabilities (Sign in with Apple is required)
 3. Build and run on a simulator or device
-4. Go to **Settings** in the app and enter your [Claude API key](https://console.anthropic.com/settings/keys)
-5. Tap **Test API Key** to verify it works
-6. Go to the **Scan** tab and take a photo of your fridge
+4. On first launch, tap **Sign in with Apple** — the app exchanges the Apple identity token for a session JWT at `POST /v1/auth/apple`, then stores the JWT in the iOS Keychain (`FridgeCheck/Services/KeychainStore.swift`)
+5. Go to the **Scan** tab and take a photo of your fridge
+
+The free tier allows 5 scans and 20 recipe generations per user per day. Beyond that the app surfaces a quota-exceeded message until the next UTC day. To run the backend yourself or move to the unlimited tier, see `server/README.md`.
 
 ## Project Structure
 
 ```
 FridgeCheck/
 ├── Models/          # SwiftData models (Recipe, PantryItem, MealPlan, etc.)
-├── Services/        # Claude API client and camera/photo helpers
+├── Services/        # Backend API client, auth, keychain, camera/photo helpers
 ├── ViewModels/      # Observable view models for each feature
 ├── Views/           # SwiftUI views organized by feature
 │   ├── Home/        # Dashboard with recent scans and today's meals
@@ -42,12 +46,14 @@ FridgeCheck/
 │   ├── Recipes/     # Browse, search, and filter saved recipes
 │   ├── ShoppingList/# Checkable shopping list with pantry integration
 │   ├── MealPlan/    # Weekly meal calendar
-│   └── Settings/    # API key, dietary preferences, allergies
+│   └── Settings/    # Dietary preferences, allergies, account
 └── Utilities/       # Date formatting and color helpers
+
+server/              # Go backend (chi, SQLite, JWT) — see server/README.md
 ```
 
 ## Requirements
 
 - Xcode 15+
 - iOS 17+
-- A [Claude API key](https://console.anthropic.com/settings/keys) with active billing
+- An Apple ID for Sign in with Apple (the backend handles all Claude billing)
