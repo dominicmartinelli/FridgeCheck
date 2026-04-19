@@ -1,0 +1,9 @@
+fridge.dkm.net {
+    encode gzip zstd
+    reverse_proxy 127.0.0.1:8082
+    tls {
+        issuer acme {
+            disable_http_challenge
+        }
+    }
+}

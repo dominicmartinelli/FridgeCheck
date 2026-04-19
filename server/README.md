@@ -80,25 +80,13 @@ ssh -J dmartinelli@10.0.93.2 dmartinelli@10.128.0.3 \
   'sudo install -m 600 -o fridgecheck -g fridgecheck /tmp/fridgecheck.toml /etc/fridgecheck/config.toml && rm /tmp/fridgecheck.toml'
 ```
 
-Add a Caddy block for `fridge.dkm.net`. On the VM, edit `/etc/caddy/Caddyfile`:
-
-```caddyfile
-fridge.dkm.net {
-    encode gzip zstd
-    reverse_proxy 127.0.0.1:8082
-    tls {
-        issuer acme {
-            disable_http_challenge
-        }
-    }
-}
-```
-
-Reload Caddy:
-
-```bash
-sudo systemctl reload caddy
-```
+The Caddy site block for `fridge.dkm.net` lives in `server/fridge.caddy`
+and is installed to `/etc/caddy/sites.d/fridge.caddy` on the VM by
+`make deploy` — no manual Caddyfile editing required. The watchlist VM's
+base `/etc/caddy/Caddyfile` uses `import /etc/caddy/sites.d/*.caddy`, so
+each service (shows-server, fridgecheck, and anything future) owns its own
+site file and reboots don't clobber it. See
+`~/dev/infra/watchlist/startup.sh` for the import glue.
 
 Point DNS at IONOS: `fridge.dkm.net A <watchlist VM external IP>`.
 
