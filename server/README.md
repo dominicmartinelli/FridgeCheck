@@ -1,6 +1,6 @@
 # FridgeCheck Server
 
-Go backend for the FridgeCheck iOS app. Proxies Claude API calls, handles Sign in with Apple, and enforces per-user daily quotas. Deployed on the same GCP VM as `shows-server`, fronted by the existing Caddy.
+Go backend for the FridgeCheck iOS app. Proxies Claude API calls, handles Sign in with Apple, and enforces per-user daily quotas. Designed to run behind Caddy (TLS via ACME) on any Linux VM.
 
 ## Stack
 
@@ -64,7 +64,7 @@ BASTION  = 10.0.0.1
 The examples below use `user@bastion` and `user@app-server` as stand-ins for
 `$(GCP_USER)@$(BASTION)` and `$(GCP_USER)@$(GCP_IP)`.
 
-SSH into the watchlist VM via the bastion and run:
+SSH into the app server via the bastion and run:
 
 ```bash
 ssh -J user@bastion user@app-server
@@ -94,15 +94,13 @@ ssh -J user@bastion user@app-server \
   'sudo install -m 600 -o fridgecheck -g fridgecheck /tmp/fridgecheck.toml /etc/fridgecheck/config.toml && rm /tmp/fridgecheck.toml'
 ```
 
-The Caddy site block for `fridge.dkm.net` lives in `server/fridge.caddy`
-and is installed to `/etc/caddy/sites.d/fridge.caddy` on the VM by
-`make deploy` — no manual Caddyfile editing required. The watchlist VM's
-base `/etc/caddy/Caddyfile` uses `import /etc/caddy/sites.d/*.caddy`, so
-each service (shows-server, fridgecheck, and anything future) owns its own
-site file and reboots don't clobber it. See
-`~/dev/infra/watchlist/startup.sh` for the import glue.
+The Caddy site block lives in `server/fridge.caddy` and is installed to
+`/etc/caddy/sites.d/fridge.caddy` on the VM by `make deploy` — no manual
+Caddyfile editing required. The VM's base `/etc/caddy/Caddyfile` should
+use `import /etc/caddy/sites.d/*.caddy` so each service on the host owns
+its own site file and reboots don't clobber it.
 
-Point DNS at IONOS: `fridge.dkm.net A <watchlist VM external IP>`.
+Point DNS at your provider: `<your-domain> A <app server external IP>`.
 
 ## Deploy
 
@@ -122,7 +120,7 @@ ssh -J user@bastion user@app-server 'sudo journalctl -u fridgecheck -f'
 ## Quick smoke test
 
 ```bash
-curl https://fridge.dkm.net/health
+curl https://<your-domain>/health
 # {"status":"ok"}
 
 # Apple exchange — requires a real identity token from the iOS app; no easy curl.

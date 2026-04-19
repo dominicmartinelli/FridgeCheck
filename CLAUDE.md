@@ -14,7 +14,7 @@ xcodebuild -project FridgeCheck.xcodeproj -scheme FridgeCheck -destination 'plat
 xcodebuild -project FridgeCheck.xcodeproj -scheme FridgeCheck test
 ```
 
-The app has no runtime secrets. All Claude calls go through the Go backend at `https://fridge.dkm.net` (see `Services/AppConfig.swift`), which holds the Anthropic API key and enforces per-user quotas. The user authenticates with Sign in with Apple; the resulting session JWT lives in the iOS Keychain.
+The app has no runtime secrets. All Claude calls go through the Go backend (base URL in `Services/AppConfig.swift`), which holds the Anthropic API key and enforces per-user quotas. The user authenticates with Sign in with Apple; the resulting session JWT lives in the iOS Keychain.
 
 ## Architecture
 
@@ -41,14 +41,14 @@ ViewModels use the `@Observable` macro (not `ObservableObject`). ModelContext is
 ### Auth Flow
 
 1. User taps Sign in with Apple; we receive an `ASAuthorizationAppleIDCredential` with an `identityToken`.
-2. `AuthService.handleAppleCredential(_:)` POSTs that token to `POST https://fridge.dkm.net/v1/auth/apple` as `{"identityToken": "..."}`.
+2. `AuthService.handleAppleCredential(_:)` POSTs that token to `POST {AppConfig.serverURL}/v1/auth/apple` as `{"identityToken": "..."}`.
 3. Server returns `{"session": "<jwt>", "userId": "..."}`. The JWT is stored in Keychain under account `session_token` via `KeychainStore`.
 4. All subsequent API calls attach `Authorization: Bearer <jwt>`. Callers read `AuthService.shared.sessionToken` and pass it down to the API service methods.
 5. `AuthService.signOut()` deletes the Keychain entries and clears in-memory state.
 
 ### Key Files
 
-- `Services/AppConfig.swift` — Single constant: `serverURL = https://fridge.dkm.net`.
+- `Services/AppConfig.swift` — Single constant: `serverURL`, the backend base URL.
 - `Services/AuthService.swift` — `@Observable @MainActor` singleton. Owns `sessionToken`, `userEmail`, `isSigningIn`, `errorMessage`. Exchanges Apple identity tokens at `/v1/auth/apple`.
 - `Services/KeychainStore.swift` — Thin wrapper over `SecItem*` keyed by service `com.fridgecheck.app`. Accounts used: `session_token`, `session_email`. Access class is `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
 - `Services/FridgeCheckAPIService.swift` — `actor` that wraps backend calls. Entry points: `analyzeImages(_:sessionToken:)` → `POST /v1/scan`, and `generateRecipes(...sessionToken:)` → `POST /v1/recipes`. Both require a non-empty session token and throw `APIError.notSignedIn` otherwise.
@@ -58,7 +58,7 @@ ViewModels use the `@Observable` macro (not `ObservableObject`). ModelContext is
 
 ### Backend API Integration
 
-- Base URL: `https://fridge.dkm.net` (`AppConfig.serverURL`)
+- Base URL: `AppConfig.serverURL`
 - Endpoints consumed by the app:
   - `POST /v1/auth/apple` — body `{identityToken}`, returns `{session, userId}` (called by `AuthService`)
   - `POST /v1/scan` — body `{images: [base64JPEG]}`, returns `{ingredients: [...]}`

@@ -22,7 +22,7 @@ An iOS app that uses Claude's vision API to scan your fridge, identify ingredien
 
 ## Setup
 
-The iOS client talks to the backend at `https://fridge.dkm.net` (see `FridgeCheck/Services/AppConfig.swift`). For the production app you don't need to run anything yourself — just sign in with Apple. For local development against your own backend, see `server/README.md`.
+The iOS client talks to the backend URL set in `FridgeCheck/Services/AppConfig.swift`. For the production app you don't need to run anything yourself — just sign in with Apple. For local development against your own backend, see `server/README.md`.
 
 1. Clone the repo and open `FridgeCheck.xcodeproj` in Xcode
 2. Set your development team in Signing & Capabilities (Sign in with Apple is required)
