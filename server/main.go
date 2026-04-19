@@ -40,7 +40,7 @@ func main() {
 	}
 	defer database.Close()
 
-	anth := anthropic.NewClient(cfg.AnthropicAPIKey, cfg.AnthropicModel)
+	anth := anthropic.NewClient(cfg.AnthropicAPIKey)
 	appleVerifier := auth.NewAppleVerifier(cfg.AppleBundleID)
 
 	rootCtx, rootCancel := context.WithCancel(context.Background())
@@ -72,9 +72,9 @@ func main() {
 	})
 
 	// Authenticated
-	meHandler := handlers.NewMeHandler(database, cfg.FreeTierScansPerDay, cfg.FreeTierRecipesPerDay)
-	scanHandler := handlers.NewScanHandler(database, anth, cfg.FreeTierScansPerDay)
-	recipesHandler := handlers.NewRecipesHandler(database, anth, cfg.FreeTierRecipesPerDay)
+	meHandler := handlers.NewMeHandler(database, cfg.ScanLimit, cfg.RecipesLimit)
+	scanHandler := handlers.NewScanHandler(database, anth, cfg.ScanModel(), cfg.ScanLimit)
+	recipesHandler := handlers.NewRecipesHandler(database, anth, cfg.RecipesModel(), cfg.RecipesLimit)
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(cfg.JWTSecret))

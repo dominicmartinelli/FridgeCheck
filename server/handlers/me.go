@@ -9,13 +9,13 @@ import (
 )
 
 type MeHandler struct {
-	db                *db.DB
-	scanLimit         int
-	recipesLimit      int
+	db              *db.DB
+	scanLimitFor    func(tier string) int
+	recipesLimitFor func(tier string) int
 }
 
-func NewMeHandler(database *db.DB, scanLimit, recipesLimit int) *MeHandler {
-	return &MeHandler{db: database, scanLimit: scanLimit, recipesLimit: recipesLimit}
+func NewMeHandler(database *db.DB, scanLimitFor, recipesLimitFor func(string) int) *MeHandler {
+	return &MeHandler{db: database, scanLimitFor: scanLimitFor, recipesLimitFor: recipesLimitFor}
 }
 
 func (h *MeHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +36,6 @@ func (h *MeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"tier":       user.Tier,
 		"createdAt":  user.CreatedAt,
 		"usageToday": map[string]int{"scan": usage[db.EndpointScan], "recipes": usage[db.EndpointRecipes]},
-		"limits":     map[string]int{"scan": h.scanLimit, "recipes": h.recipesLimit},
+		"limits":     map[string]int{"scan": h.scanLimitFor(user.Tier), "recipes": h.recipesLimitFor(user.Tier)},
 	})
 }

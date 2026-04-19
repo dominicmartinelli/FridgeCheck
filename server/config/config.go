@@ -21,8 +21,10 @@ type Config struct {
 	JWTSecret      string `toml:"jwt_secret"`
 	AppleBundleID  string `toml:"apple_bundle_id"`
 
-	AnthropicAPIKey string `toml:"anthropic_api_key"`
-	AnthropicModel  string `toml:"anthropic_model"`
+	AnthropicAPIKey      string `toml:"anthropic_api_key"`
+	AnthropicModel       string `toml:"anthropic_model"`         // fallback default
+	AnthropicScanModel   string `toml:"anthropic_scan_model"`    // overrides for /v1/scan
+	AnthropicRecipesModel string `toml:"anthropic_recipes_model"` // overrides for /v1/recipes
 
 	FreeTierScansPerDay   int `toml:"free_tier_scans_per_day"`
 	FreeTierRecipesPerDay int `toml:"free_tier_recipes_per_day"`
@@ -47,9 +49,46 @@ func defaults() *Config {
 		CertDir:               "/var/lib/fridgecheck/certs",
 		AppleBundleID:         "com.fridgecheck.app",
 		AnthropicModel:        "claude-sonnet-4-5-20250929",
+		AnthropicRecipesModel: "claude-haiku-4-5-20251001",
 		FreeTierScansPerDay:   5,
 		FreeTierRecipesPerDay: 20,
 	}
+}
+
+// ScanModel returns the model for /v1/scan, falling back to AnthropicModel.
+func (c *Config) ScanModel() string {
+	if c.AnthropicScanModel != "" {
+		return c.AnthropicScanModel
+	}
+	return c.AnthropicModel
+}
+
+// RecipesModel returns the model for /v1/recipes, falling back to AnthropicModel.
+func (c *Config) RecipesModel() string {
+	if c.AnthropicRecipesModel != "" {
+		return c.AnthropicRecipesModel
+	}
+	return c.AnthropicModel
+}
+
+// Unlimited is the sentinel value returned by ScanLimit/RecipesLimit for
+// tiers with no daily cap. Handlers treat a limit of 0 as "never quota-block".
+const Unlimited = 0
+
+// ScanLimit returns the daily /v1/scan quota for a tier.
+func (c *Config) ScanLimit(tier string) int {
+	if tier == "unlimited" {
+		return Unlimited
+	}
+	return c.FreeTierScansPerDay
+}
+
+// RecipesLimit returns the daily /v1/recipes quota for a tier.
+func (c *Config) RecipesLimit(tier string) int {
+	if tier == "unlimited" {
+		return Unlimited
+	}
+	return c.FreeTierRecipesPerDay
 }
 
 func defaultConfigPath() string {

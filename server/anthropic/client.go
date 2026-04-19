@@ -3,6 +3,7 @@ package anthropic
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -13,16 +14,19 @@ import (
 
 const endpoint = "https://api.anthropic.com/v1/messages"
 
+// ErrTruncated is returned when the model stopped because it hit max_tokens.
+// The partial response is unusable (incomplete JSON), so callers should
+// surface this as a distinct error rather than a generic upstream failure.
+var ErrTruncated = errors.New("anthropic response truncated at max_tokens")
+
 type Client struct {
 	apiKey string
-	model  string
 	http   *http.Client
 }
 
-func NewClient(apiKey, model string) *Client {
+func NewClient(apiKey string) *Client {
 	return &Client{
 		apiKey: apiKey,
-		model:  model,
 		http:   &http.Client{Timeout: 5 * time.Minute},
 	}
 }
@@ -92,10 +96,11 @@ type responseBody struct {
 		Type string `json:"type"`
 		Text string `json:"text"`
 	} `json:"content"`
-	Usage responseUsage `json:"usage"`
+	StopReason string        `json:"stop_reason"`
+	Usage      responseUsage `json:"usage"`
 }
 
-func (c *Client) AnalyzeImages(imagesB64 []string) ([]Ingredient, Usage, error) {
+func (c *Client) AnalyzeImages(imagesB64 []string, model string) ([]Ingredient, Usage, error) {
 	blocks := make([]contentBlock, 0, len(imagesB64)+1)
 	for _, data := range imagesB64 {
 		blocks = append(blocks, contentBlock{
@@ -126,8 +131,8 @@ Only return the JSON, no other text.`, countWord),
 	})
 
 	text, usage, err := c.call(requestBody{
-		Model:     c.model,
-		MaxTokens: 2048,
+		Model:     model,
+		MaxTokens: 8192,
 		Messages:  []message{{Role: "user", Content: blocks}},
 	})
 	if err != nil {
@@ -142,7 +147,7 @@ Only return the JSON, no other text.`, countWord),
 	return parsed.Ingredients, usage, nil
 }
 
-func (c *Client) GenerateRecipes(input RecipeInput) ([]Recipe, Usage, error) {
+func (c *Client) GenerateRecipes(input RecipeInput, model string) ([]Recipe, Usage, error) {
 	parts := []string{fmt.Sprintf("I have these ingredients available: %s.", strings.Join(input.Ingredients, ", "))}
 	if len(input.PantryItems) > 0 {
 		parts = append(parts, fmt.Sprintf("I also have these pantry staples: %s.", strings.Join(input.PantryItems, ", ")))
@@ -180,7 +185,7 @@ Return your response as valid JSON with this exact structure:
 Only return the JSON, no other text.`)
 
 	text, usage, err := c.call(requestBody{
-		Model:     c.model,
+		Model:     model,
 		MaxTokens: 8192,
 		Messages:  []message{{Role: "user", Content: strings.Join(parts, "\n")}},
 	})
@@ -228,7 +233,11 @@ func (c *Client) call(body requestBody) (string, Usage, error) {
 	if len(r.Content) == 0 || r.Content[0].Text == "" {
 		return "", Usage{}, fmt.Errorf("anthropic returned no text block")
 	}
-	return r.Content[0].Text, Usage{InputTokens: r.Usage.InputTokens, OutputTokens: r.Usage.OutputTokens}, nil
+	usage := Usage{InputTokens: r.Usage.InputTokens, OutputTokens: r.Usage.OutputTokens}
+	if r.StopReason == "max_tokens" {
+		return r.Content[0].Text, usage, fmt.Errorf("%w (max_tokens=%d, out_tokens=%d)", ErrTruncated, body.MaxTokens, r.Usage.OutputTokens)
+	}
+	return r.Content[0].Text, usage, nil
 }
 
 var fenceJSON = regexp.MustCompile("(?s)```json\\s*(.*?)```")

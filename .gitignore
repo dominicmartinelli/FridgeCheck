@@ -12,3 +12,8 @@ build/
 
 ## Secrets
 key-check
+
+# Local operational scripts
+backup.sh
+redteam.sh
+usage.sh
