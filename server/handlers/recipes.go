@@ -64,8 +64,16 @@ func (h *RecipesHandler) Post(w http.ResponseWriter, r *http.Request) {
 	}
 	slog.Info("recipes received", "uid", userID, "ingredients", len(input.Ingredients), "model", h.model)
 
-	recipes, usage, err := h.anthropic.GenerateRecipes(input, h.model)
+	usageID, err := h.db.ReserveUsage(userID, db.EndpointRecipes)
 	if err != nil {
+		slog.Error("reserve usage failed", "err", err, "uid", userID)
+		writeError(w, http.StatusInternalServerError, "db_error", nil)
+		return
+	}
+
+	recipes, usage, err := h.anthropic.GenerateRecipes(r.Context(), input, h.model)
+	if err != nil {
+		settleUsage(h.db, usageID, usage)
 		slog.Error("anthropic recipes failed", "err", err, "uid", userID, "model", h.model)
 		if errors.Is(err, anthropic.ErrTruncated) {
 			writeError(w, http.StatusBadGateway, "response_truncated", nil)
@@ -74,7 +82,7 @@ func (h *RecipesHandler) Post(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, "upstream_failed", nil)
 		return
 	}
-	if err := h.db.RecordUsage(userID, db.EndpointRecipes, usage.InputTokens, usage.OutputTokens); err != nil {
+	if err := h.db.SetUsageTokens(usageID, usage.InputTokens, usage.OutputTokens); err != nil {
 		slog.Error("record usage failed", "err", err)
 	}
 	slog.Info("recipes ok", "uid", userID, "model", h.model, "recipes", len(recipes), "in_tokens", usage.InputTokens, "out_tokens", usage.OutputTokens)

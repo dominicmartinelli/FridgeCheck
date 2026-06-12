@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -43,7 +44,12 @@ func RateLimit(ctx context.Context, r rate.Limit, burst int) func(http.Handler) 
 
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			// RemoteAddr is "ip:port" when no proxy rewrote it — strip the
+			// port so every connection from one IP shares a bucket.
 			ip := req.RemoteAddr
+			if host, _, err := net.SplitHostPort(ip); err == nil {
+				ip = host
+			}
 			mu.Lock()
 			e, ok := limiters[ip]
 			if !ok {

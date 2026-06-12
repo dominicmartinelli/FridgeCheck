@@ -3,6 +3,8 @@ import SwiftData
 
 struct RecipeSuggestionsView: View {
     @Environment(\.modelContext) private var modelContext
+    @Query private var preferences: [UserPreferences]
+    @Query private var pantryItems: [PantryItem]
     @Bindable var viewModel: ScanViewModel
     @State private var savedRecipeIDs: Set<UUID> = []
 
@@ -96,7 +98,13 @@ struct RecipeSuggestionsView: View {
             Text("Could not generate recipe suggestions. Please try again.")
         } actions: {
             Button("Retry") {
-                // This will be re-triggered via the parent view
+                Task {
+                    await viewModel.generateRecipes(
+                        preferences: preferences.first,
+                        pantryItems: pantryItems,
+                        sessionToken: AuthService.shared.sessionToken ?? ""
+                    )
+                }
             }
             .buttonStyle(.borderedProminent)
         }

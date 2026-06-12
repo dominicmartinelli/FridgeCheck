@@ -73,6 +73,7 @@ private struct ServerError: Decodable {
 actor FridgeCheckAPIService {
     enum APIError: LocalizedError {
         case notSignedIn
+        case sessionExpired
         case invalidImage
         case networkError(Error)
         case decodingError(String)
@@ -82,10 +83,11 @@ actor FridgeCheckAPIService {
         var errorDescription: String? {
             switch self {
             case .notSignedIn: return "Please sign in to continue."
+            case .sessionExpired: return "Your session has expired. Please sign in again."
             case .invalidImage: return "Could not process the image. Please try again."
             case .networkError(let err): return "Network error: \(err.localizedDescription)"
             case .decodingError(let msg): return "Failed to parse response: \(msg)"
-            case .quotaExceeded(let used, let limit): return "Daily limit reached (\(used)/\(limit)). Try again tomorrow."
+            case .quotaExceeded(let used, let limit): return "Daily limit reached (\(used)/\(limit)). Limits use a rolling 24-hour window — try again later."
             case .serverError(let code, let msg): return "Server error (\(code)): \(msg)"
             }
         }
@@ -98,7 +100,9 @@ actor FridgeCheckAPIService {
         var encoded: [String] = []
         encoded.reserveCapacity(images.count)
         for image in images {
-            let resized = Self.resizeImage(image, maxDimension: 1536)
+            // ~1024px is plenty for ingredient recognition; image tokens scale
+            // with pixel count, so this halves scan cost vs. 1536px.
+            let resized = Self.resizeImage(image, maxDimension: 1024)
             guard let data = resized.jpegData(compressionQuality: 0.6) else {
                 throw APIError.invalidImage
             }
@@ -143,6 +147,33 @@ actor FridgeCheckAPIService {
         }
     }
 
+    func deleteAccount(sessionToken: String) async throws {
+        guard !sessionToken.isEmpty else { throw APIError.notSignedIn }
+
+        var request = URLRequest(
+            url: AppConfig.serverURL.appendingPathComponent("/v1/me"),
+            timeoutInterval: 60
+        )
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(sessionToken)", forHTTPHeaderField: "Authorization")
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch {
+            throw APIError.networkError(error)
+        }
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.serverError(-1, "No response")
+        }
+        if http.statusCode == 204 { return }
+        if http.statusCode == 401 { throw APIError.sessionExpired }
+
+        let parsed = try? JSONDecoder().decode(ServerError.self, from: data)
+        let msg = parsed?.error ?? String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
+        throw APIError.serverError(http.statusCode, msg)
+    }
+
     private func post(path: String, body: Data, sessionToken: String) async throws -> Data {
         var request = URLRequest(
             url: AppConfig.serverURL.appendingPathComponent(path),
@@ -164,6 +195,7 @@ actor FridgeCheckAPIService {
             throw APIError.serverError(-1, "No response")
         }
         if http.statusCode == 200 { return data }
+        if http.statusCode == 401 { throw APIError.sessionExpired }
 
         let parsed = try? JSONDecoder().decode(ServerError.self, from: data)
 
@@ -175,15 +207,19 @@ actor FridgeCheckAPIService {
         throw APIError.serverError(http.statusCode, msg)
     }
 
-    private static func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
-        let size = image.size
-        let longestSide = max(size.width, size.height)
+    static func resizeImage(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+        let pixelWidth = image.size.width * image.scale
+        let pixelHeight = image.size.height * image.scale
+        let longestSide = max(pixelWidth, pixelHeight)
         guard longestSide > maxDimension else { return image }
 
-        let scale = maxDimension / longestSide
-        let newSize = CGSize(width: size.width * scale, height: size.height * scale)
+        let ratio = maxDimension / longestSide
+        let newSize = CGSize(width: pixelWidth * ratio, height: pixelHeight * ratio)
 
-        let renderer = UIGraphicsImageRenderer(size: newSize)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(size: newSize, format: format)
         return renderer.image { _ in
             image.draw(in: CGRect(origin: .zero, size: newSize))
         }

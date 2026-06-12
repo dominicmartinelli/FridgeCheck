@@ -65,9 +65,10 @@ ViewModels use the `@Observable` macro (not `ObservableObject`). ModelContext is
   - `POST /v1/recipes` — body `{ingredients, dietaryRestrictions, allergies, cuisinePreferences, servingSize, pantryItems}`, returns `{recipes: [...]}`
   - `GET /v1/me` — current user + today's usage (exposed by the backend; wire a client method here when adding a usage-meter UI)
 - All authenticated requests: `Authorization: Bearer <session JWT>`, `Content-Type: application/json`, `timeoutInterval: 300`.
-- Images are resized to max 1536px (longest side) and JPEG-compressed at quality 0.6 before base64 encoding — see `FridgeCheckAPIService.resizeImage(_:maxDimension:)` and the `jpegData(compressionQuality: 0.6)` call in `analyzeImages`.
-- Error enum: `FridgeCheckAPIService.APIError` with cases `notSignedIn`, `invalidImage`, `networkError(Error)`, `decodingError(String)`, `quotaExceeded(used:limit:)` (parsed from HTTP 429 body), `serverError(Int, String)`. Auth errors live in the separate `AuthError` enum in `AuthService.swift`.
-- Quota model: free tier is 5 scans/day and 20 recipe generations/day per user; the server returns HTTP 429 with `{error, used, limit}` which is surfaced as `APIError.quotaExceeded`. The unlimited tier has no cap.
+- Images are resized to max 1024px (longest side) and JPEG-compressed at quality 0.6 before base64 encoding — see `FridgeCheckAPIService.resizeImage(_:maxDimension:)` and the `jpegData(compressionQuality: 0.6)` call in `analyzeImages`. Image tokens scale with pixel count; don't raise the dimension without re-checking scan cost.
+- Error enum: `FridgeCheckAPIService.APIError` with cases `notSignedIn`, `sessionExpired` (HTTP 401 — callers sign the user out), `invalidImage`, `networkError(Error)`, `decodingError(String)`, `quotaExceeded(used:limit:)` (parsed from HTTP 429 body), `serverError(Int, String)`. Auth errors live in the separate `AuthError` enum in `AuthService.swift`.
+- Quota model: free tier is 5 scans and 20 recipe generations per rolling 24-hour window per user; the server returns HTTP 429 with `{error, used, limit}` which is surfaced as `APIError.quotaExceeded`. The unlimited tier has no cap.
+- The server sends `output_config` (structured outputs) on every Claude request, so configured models must support it: Haiku 4.5 / Sonnet 4.6 or newer — **not** Sonnet 4.5.
 
 ### Patterns to Follow
 

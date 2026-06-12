@@ -39,8 +39,7 @@ final class ScanViewModel {
             }
             self.isAnalyzing = false
         } catch {
-            self.errorMessage = error.localizedDescription
-            self.showError = true
+            handleAPIError(error)
             self.isAnalyzing = false
         }
     }
@@ -83,10 +82,19 @@ final class ScanViewModel {
             }
             self.isGeneratingRecipes = false
         } catch {
-            self.errorMessage = error.localizedDescription
-            self.showError = true
+            handleAPIError(error)
             self.isGeneratingRecipes = false
         }
+    }
+
+    private func handleAPIError(_ error: Error) {
+        // An expired session can only be fixed by signing in again — drop the
+        // stale token so the app returns to the sign-in screen.
+        if case FridgeCheckAPIService.APIError.sessionExpired = error {
+            AuthService.shared.signOut()
+        }
+        errorMessage = error.localizedDescription
+        showError = true
     }
 
     func toggleIngredient(_ ingredient: DetectedIngredient) {
@@ -115,15 +123,26 @@ final class ScanViewModel {
     func saveScanRecord(modelContext: ModelContext) {
         guard !capturedImages.isEmpty else { return }
 
-        let imageDataItems = capturedImages.compactMap { $0.jpegData(compressionQuality: 0.6) }
-        guard !imageDataItems.isEmpty else { return }
+        let images = capturedImages
+        Task {
+            // Resize + JPEG-encode off the main actor: the originals are
+            // full-resolution camera photos, and encoding them inline froze
+            // the UI while writing multi-MB blobs into SwiftData.
+            let imageDataItems = await Task.detached(priority: .userInitiated) {
+                images.compactMap {
+                    FridgeCheckAPIService.resizeImage($0, maxDimension: 1024)
+                        .jpegData(compressionQuality: 0.6)
+                }
+            }.value
+            guard !imageDataItems.isEmpty else { return }
 
-        let record = ScanRecord(
-            imageDataItems: imageDataItems,
-            detectedIngredients: detectedIngredients.map(\.name),
-            recipes: suggestedRecipes
-        )
-        modelContext.insert(record)
+            let record = ScanRecord(
+                imageDataItems: imageDataItems,
+                detectedIngredients: detectedIngredients.map(\.name),
+                recipes: suggestedRecipes
+            )
+            modelContext.insert(record)
+        }
     }
 
     func reset() {

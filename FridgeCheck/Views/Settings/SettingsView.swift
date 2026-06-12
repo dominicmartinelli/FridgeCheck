@@ -13,6 +13,10 @@ struct SettingsView: View {
     @State private var hasLoaded = false
     @State private var prefs: UserPreferences?
     @State private var showSignOutConfirm = false
+    @State private var showDeleteConfirm = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
+    private let api = FridgeCheckAPIService()
 
     private func ensurePreferences() -> UserPreferences {
         if let existing = preferences.first { return existing }
@@ -39,8 +43,22 @@ struct SettingsView: View {
                     } label: {
                         Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
+                    Button(role: .destructive) {
+                        showDeleteConfirm = true
+                    } label: {
+                        HStack {
+                            Label("Delete Account", systemImage: "trash")
+                            if isDeleting {
+                                Spacer()
+                                ProgressView()
+                            }
+                        }
+                    }
+                    .disabled(isDeleting)
                 } header: {
                     Text("Account")
+                } footer: {
+                    Text("Deleting your account permanently removes your scan history and usage data from our servers.")
                 }
 
                 // Serving Size
@@ -129,6 +147,12 @@ struct SettingsView: View {
                     } label: {
                         Label("All Recipes", systemImage: "book")
                     }
+
+                    NavigationLink {
+                        HelpView()
+                    } label: {
+                        Label("Help", systemImage: "questionmark.circle")
+                    }
                 }
 
                 // About
@@ -136,13 +160,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.1")
-                            .foregroundStyle(.secondary)
-                    }
-                    HStack {
-                        Text("Powered by")
-                        Spacer()
-                        Text("Claude AI")
+                        Text("1.2.2")
                             .foregroundStyle(.secondary)
                     }
                 } header: {
@@ -170,6 +188,47 @@ struct SettingsView: View {
             } message: {
                 Text("You'll need to sign in again to use the app.")
             }
+            .confirmationDialog(
+                "Delete Account?",
+                isPresented: $showDeleteConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Delete Account", role: .destructive) {
+                    Task { await deleteAccount() }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("This permanently deletes your account and all server-side data. This cannot be undone.")
+            }
+            .alert("Couldn't Delete Account", isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(deleteError ?? "")
+            }
+        }
+    }
+
+    private func deleteAccount() async {
+        guard let token = auth.sessionToken, !token.isEmpty else {
+            auth.signOut()
+            return
+        }
+        isDeleting = true
+        defer { isDeleting = false }
+        do {
+            try await api.deleteAccount(sessionToken: token)
+            auth.signOut()
+        } catch {
+            // An expired session can't authorize the delete — sign out so the
+            // user can sign in again and retry.
+            if case FridgeCheckAPIService.APIError.sessionExpired = error {
+                auth.signOut()
+                return
+            }
+            deleteError = error.localizedDescription
         }
     }
 

@@ -21,21 +21,43 @@ func (db *DB) CountUsageLast24h(userID string, endpoint Endpoint) (int, error) {
 	return n, nil
 }
 
-func (db *DB) RecordUsage(userID string, endpoint Endpoint, tokensIn, tokensOut int) error {
+// ReserveUsage inserts a usage event *before* the upstream call so a burst of
+// concurrent requests can't all pass the quota check together. Fill in token
+// counts with SetUsageTokens once the call completes, or release the
+// reservation with DeleteUsage if the call failed without spending tokens.
+func (db *DB) ReserveUsage(userID string, endpoint Endpoint) (string, error) {
 	id, err := newID()
 	if err != nil {
-		return err
+		return "", err
 	}
 	if _, err := db.Exec(`
 		INSERT INTO usage_events (id, user_id, endpoint, tokens_in, tokens_out)
-		VALUES (?, ?, ?, ?, ?)
-	`, id, userID, string(endpoint), tokensIn, tokensOut); err != nil {
-		return fmt.Errorf("insert usage_event: %w", err)
+		VALUES (?, ?, ?, 0, 0)
+	`, id, userID, string(endpoint)); err != nil {
+		return "", fmt.Errorf("insert usage_event: %w", err)
+	}
+	return id, nil
+}
+
+func (db *DB) SetUsageTokens(id string, tokensIn, tokensOut int) error {
+	if _, err := db.Exec(`
+		UPDATE usage_events SET tokens_in = ?, tokens_out = ? WHERE id = ?
+	`, tokensIn, tokensOut, id); err != nil {
+		return fmt.Errorf("update usage_event: %w", err)
 	}
 	return nil
 }
 
-func (db *DB) UsageToday(userID string) (map[Endpoint]int, error) {
+func (db *DB) DeleteUsage(id string) error {
+	if _, err := db.Exec(`DELETE FROM usage_events WHERE id = ?`, id); err != nil {
+		return fmt.Errorf("delete usage_event: %w", err)
+	}
+	return nil
+}
+
+// UsageLast24h returns per-endpoint event counts in the rolling 24h window —
+// the same window CountUsageLast24h enforces quotas against.
+func (db *DB) UsageLast24h(userID string) (map[Endpoint]int, error) {
 	rows, err := db.Query(`
 		SELECT endpoint, count(*) FROM usage_events
 		WHERE user_id = ? AND at > datetime('now', '-1 day')

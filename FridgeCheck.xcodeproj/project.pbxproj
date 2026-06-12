@@ -38,6 +38,7 @@
 		A00000000000000000000019 /* ShoppingListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A00000000000000000000119 /* ShoppingListView.swift */; };
 		A0000000000000000000001A /* MealPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011A /* MealPlanView.swift */; };
 		A0000000000000000000001B /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011B /* SettingsView.swift */; };
+		A0000000000000000000091B /* HelpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000081B /* HelpView.swift */; };
 		A0000000000000000000001C /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011C /* Extensions.swift */; };
 		A0000000000000000000001D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0000000000000000000011D /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -75,6 +76,7 @@
 		A00000000000000000000119 /* ShoppingListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShoppingListView.swift; sourceTree = "<group>"; };
 		A0000000000000000000011A /* MealPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MealPlanView.swift; sourceTree = "<group>"; };
 		A0000000000000000000011B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A0000000000000000000081B /* HelpView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelpView.swift; sourceTree = "<group>"; };
 		A0000000000000000000011C /* Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
 		A0000000000000000000011D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A0000000000000000000011E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -226,6 +228,7 @@
 			isa = PBXGroup;
 			children = (
 				A0000000000000000000011B /* SettingsView.swift */,
+				A0000000000000000000081B /* HelpView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -346,6 +349,7 @@
 				A00000000000000000000019 /* ShoppingListView.swift in Sources */,
 				A0000000000000000000001A /* MealPlanView.swift in Sources */,
 				A0000000000000000000001B /* SettingsView.swift in Sources */,
+				A0000000000000000000091B /* HelpView.swift in Sources */,
 				A0000000000000000000001C /* Extensions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -493,7 +497,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fridgecheck.app;
 				PRODUCT_NAME = FridgeCheck;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -523,7 +527,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.fridgecheck.app;
 				PRODUCT_NAME = FridgeCheck;
 				SWIFT_EMIT_LOC_STRINGS = YES;

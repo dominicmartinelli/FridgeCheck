@@ -2,6 +2,7 @@ package anthropic
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -81,10 +82,72 @@ type message struct {
 }
 
 type requestBody struct {
-	Model     string    `json:"model"`
-	MaxTokens int       `json:"max_tokens"`
-	Messages  []message `json:"messages"`
+	Model        string        `json:"model"`
+	MaxTokens    int           `json:"max_tokens"`
+	Messages     []message     `json:"messages"`
+	OutputConfig *outputConfig `json:"output_config,omitempty"`
 }
+
+// outputConfig enforces structured outputs: the API guarantees the response
+// is valid JSON matching the schema, so no "only return JSON" prompt
+// boilerplate or markdown-fence stripping is needed. Requires a model with
+// structured-outputs support (Haiku 4.5, Sonnet 4.6, or newer — NOT Sonnet 4.5).
+type outputConfig struct {
+	Format outputFormat `json:"format"`
+}
+
+type outputFormat struct {
+	Type   string          `json:"type"`
+	Schema json.RawMessage `json:"schema"`
+}
+
+const ingredientsSchema = `{
+  "type": "object",
+  "properties": {
+    "ingredients": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "category": {"type": "string", "enum": ["Produce", "Dairy", "Meat", "Seafood", "Grains", "Condiments", "Beverages", "Snacks", "Frozen", "Other"]},
+          "estimatedQuantity": {"type": "string", "description": "Estimated amount, e.g. '2 pieces', '1 bag', '500ml'"}
+        },
+        "required": ["name", "category", "estimatedQuantity"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["ingredients"],
+  "additionalProperties": false
+}`
+
+const recipesSchema = `{
+  "type": "object",
+  "properties": {
+    "recipes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {"type": "string"},
+          "summary": {"type": "string", "description": "Brief 1-2 sentence description"},
+          "ingredients": {"type": "array", "items": {"type": "string", "description": "Ingredient with amount"}},
+          "steps": {"type": "array", "items": {"type": "string"}},
+          "prepTime": {"type": "integer", "description": "Minutes"},
+          "cookTime": {"type": "integer", "description": "Minutes"},
+          "nutritionalInfo": {"type": "string", "description": "e.g. 'Approx. 450 cal, 25g protein, 35g carbs, 18g fat per serving'"},
+          "cuisineType": {"type": "string"},
+          "difficulty": {"type": "string", "enum": ["Easy", "Medium", "Hard"]}
+        },
+        "required": ["title", "summary", "ingredients", "steps", "prepTime", "cookTime", "nutritionalInfo", "cuisineType", "difficulty"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["recipes"],
+  "additionalProperties": false
+}`
 
 type responseUsage struct {
 	InputTokens  int `json:"input_tokens"`
@@ -100,7 +163,7 @@ type responseBody struct {
 	Usage      responseUsage `json:"usage"`
 }
 
-func (c *Client) AnalyzeImages(imagesB64 []string, model string) ([]Ingredient, Usage, error) {
+func (c *Client) AnalyzeImages(ctx context.Context, imagesB64 []string, model string) ([]Ingredient, Usage, error) {
 	blocks := make([]contentBlock, 0, len(imagesB64)+1)
 	for _, data := range imagesB64 {
 		blocks = append(blocks, contentBlock{
@@ -114,26 +177,14 @@ func (c *Client) AnalyzeImages(imagesB64 []string, model string) ([]Ingredient, 
 	}
 	blocks = append(blocks, contentBlock{
 		Type: "text",
-		Text: fmt.Sprintf(`Analyze %s of a fridge/food items. Identify all visible food items and ingredients across all images. Deduplicate items that appear in multiple images.
-
-Return your response as valid JSON with this exact structure:
-{
-  "ingredients": [
-    {
-      "name": "item name",
-      "category": "one of: Produce, Dairy, Meat, Seafood, Grains, Condiments, Beverages, Snacks, Frozen, Other",
-      "estimatedQuantity": "estimated amount e.g. '2 pieces', '1 bag', '500ml'"
-    }
-  ]
-}
-
-Only return the JSON, no other text.`, countWord),
+		Text: fmt.Sprintf("Analyze %s of a fridge/food items. Identify all visible food items and ingredients across all images. Deduplicate items that appear in multiple images. Estimate the quantity of each item. Only list items you can actually see — if no food items are clearly visible, return an empty list.", countWord),
 	})
 
-	text, usage, err := c.call(requestBody{
-		Model:     model,
-		MaxTokens: 8192,
-		Messages:  []message{{Role: "user", Content: blocks}},
+	text, usage, err := c.call(ctx, requestBody{
+		Model:        model,
+		MaxTokens:    2048,
+		Messages:     []message{{Role: "user", Content: blocks}},
+		OutputConfig: &outputConfig{Format: outputFormat{Type: "json_schema", Schema: json.RawMessage(ingredientsSchema)}},
 	})
 	if err != nil {
 		return nil, usage, err
@@ -147,7 +198,7 @@ Only return the JSON, no other text.`, countWord),
 	return parsed.Ingredients, usage, nil
 }
 
-func (c *Client) GenerateRecipes(input RecipeInput, model string) ([]Recipe, Usage, error) {
+func (c *Client) GenerateRecipes(ctx context.Context, input RecipeInput, model string) ([]Recipe, Usage, error) {
 	parts := []string{fmt.Sprintf("I have these ingredients available: %s.", strings.Join(input.Ingredients, ", "))}
 	if len(input.PantryItems) > 0 {
 		parts = append(parts, fmt.Sprintf("I also have these pantry staples: %s.", strings.Join(input.PantryItems, ", ")))
@@ -163,31 +214,13 @@ func (c *Client) GenerateRecipes(input RecipeInput, model string) ([]Recipe, Usa
 	}
 	parts = append(parts, fmt.Sprintf("Serving size: %d people.", input.ServingSize))
 	parts = append(parts, `
-Suggest 5 recipes I can make using ONLY the ingredients listed above. Do not suggest recipes that require significant ingredients not in the list. You may assume basic pantry staples (salt, pepper, oil, water, common spices) are available. For each recipe, provide detailed step-by-step instructions.
+Suggest 3 recipes I can make using ONLY the ingredients listed above. Do not suggest recipes that require significant ingredients not in the list. You may assume basic pantry staples (salt, pepper, oil, water, common spices) are available. Provide complete step-by-step instructions, keeping each step to one short sentence.`)
 
-Return your response as valid JSON with this exact structure:
-{
-  "recipes": [
-    {
-      "title": "Recipe Name",
-      "summary": "Brief 1-2 sentence description",
-      "ingredients": ["ingredient 1 with amount", "ingredient 2 with amount"],
-      "steps": ["Step 1 instruction", "Step 2 instruction"],
-      "prepTime": 15,
-      "cookTime": 30,
-      "nutritionalInfo": "Approx. 450 cal, 25g protein, 35g carbs, 18g fat per serving",
-      "cuisineType": "Italian",
-      "difficulty": "Easy"
-    }
-  ]
-}
-
-Only return the JSON, no other text.`)
-
-	text, usage, err := c.call(requestBody{
-		Model:     model,
-		MaxTokens: 8192,
-		Messages:  []message{{Role: "user", Content: strings.Join(parts, "\n")}},
+	text, usage, err := c.call(ctx, requestBody{
+		Model:        model,
+		MaxTokens:    4096,
+		Messages:     []message{{Role: "user", Content: strings.Join(parts, "\n")}},
+		OutputConfig: &outputConfig{Format: outputFormat{Type: "json_schema", Schema: json.RawMessage(recipesSchema)}},
 	})
 	if err != nil {
 		return nil, usage, err
@@ -201,12 +234,15 @@ Only return the JSON, no other text.`)
 	return parsed.Recipes, usage, nil
 }
 
-func (c *Client) call(body requestBody) (string, Usage, error) {
+// call posts to the Messages API. The request is tied to ctx so an abandoned
+// client request cancels the upstream call instead of running (and billing)
+// to completion.
+func (c *Client) call(ctx context.Context, body requestBody) (string, Usage, error) {
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return "", Usage{}, err
 	}
-	req, err := http.NewRequest("POST", endpoint, bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(buf))
 	if err != nil {
 		return "", Usage{}, err
 	}
@@ -230,14 +266,23 @@ func (c *Client) call(body requestBody) (string, Usage, error) {
 	if err := json.Unmarshal(respBytes, &r); err != nil {
 		return "", Usage{}, fmt.Errorf("decode anthropic response: %w", err)
 	}
-	if len(r.Content) == 0 || r.Content[0].Text == "" {
-		return "", Usage{}, fmt.Errorf("anthropic returned no text block")
+	// Join all text blocks rather than assuming the first block is text —
+	// some model configs emit other block types (e.g. thinking) first.
+	var sb strings.Builder
+	for _, blk := range r.Content {
+		if blk.Type == "text" {
+			sb.WriteString(blk.Text)
+		}
 	}
+	text := sb.String()
 	usage := Usage{InputTokens: r.Usage.InputTokens, OutputTokens: r.Usage.OutputTokens}
-	if r.StopReason == "max_tokens" {
-		return r.Content[0].Text, usage, fmt.Errorf("%w (max_tokens=%d, out_tokens=%d)", ErrTruncated, body.MaxTokens, r.Usage.OutputTokens)
+	if text == "" {
+		return "", usage, fmt.Errorf("anthropic returned no text block")
 	}
-	return r.Content[0].Text, usage, nil
+	if r.StopReason == "max_tokens" {
+		return text, usage, fmt.Errorf("%w (max_tokens=%d, out_tokens=%d)", ErrTruncated, body.MaxTokens, r.Usage.OutputTokens)
+	}
+	return text, usage, nil
 }
 
 var fenceJSON = regexp.MustCompile("(?s)```json\\s*(.*?)```")

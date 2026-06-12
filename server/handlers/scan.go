@@ -69,8 +69,16 @@ func (h *ScanHandler) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ingredients, usage, err := h.anthropic.AnalyzeImages(req.Images, h.model)
+	usageID, err := h.db.ReserveUsage(userID, db.EndpointScan)
 	if err != nil {
+		slog.Error("reserve usage failed", "err", err, "uid", userID)
+		writeError(w, http.StatusInternalServerError, "db_error", nil)
+		return
+	}
+
+	ingredients, usage, err := h.anthropic.AnalyzeImages(r.Context(), req.Images, h.model)
+	if err != nil {
+		settleUsage(h.db, usageID, usage)
 		slog.Error("anthropic analyze failed", "err", err, "uid", userID)
 		if errors.Is(err, anthropic.ErrTruncated) {
 			writeError(w, http.StatusBadGateway, "response_truncated", nil)
@@ -79,7 +87,7 @@ func (h *ScanHandler) Post(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadGateway, "upstream_failed", nil)
 		return
 	}
-	if err := h.db.RecordUsage(userID, db.EndpointScan, usage.InputTokens, usage.OutputTokens); err != nil {
+	if err := h.db.SetUsageTokens(usageID, usage.InputTokens, usage.OutputTokens); err != nil {
 		slog.Error("record usage failed", "err", err)
 	}
 	slog.Info("scan ok", "uid", userID, "model", h.model, "ingredients", len(ingredients), "in_tokens", usage.InputTokens, "out_tokens", usage.OutputTokens)

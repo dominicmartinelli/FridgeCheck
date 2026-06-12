@@ -48,7 +48,11 @@ func defaults() *Config {
 		DBPath:                "./fridgecheck.db",
 		CertDir:               "/var/lib/fridgecheck/certs",
 		AppleBundleID:         "com.fridgecheck.app",
-		AnthropicModel:        "claude-sonnet-4-5-20250929",
+		// Models must support structured outputs (Haiku 4.5 / Sonnet 4.6+,
+		// NOT Sonnet 4.5) — the anthropic client sends output_config on
+		// every request.
+		AnthropicModel:        "claude-sonnet-4-6",
+		AnthropicScanModel:    "claude-haiku-4-5-20251001",
 		AnthropicRecipesModel: "claude-haiku-4-5-20251001",
 		FreeTierScansPerDay:   5,
 		FreeTierRecipesPerDay: 20,

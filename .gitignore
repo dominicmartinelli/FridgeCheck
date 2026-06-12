@@ -12,6 +12,13 @@ build/
 
 ## Secrets
 key-check
+server/config.toml
+
+# Build artifacts and local data
+server/fridgecheck-server
+server/fridgecheck-server-linux
+*.db
+resume
 
 # Local operational scripts
 backup.sh

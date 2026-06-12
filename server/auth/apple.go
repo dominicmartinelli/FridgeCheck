@@ -37,10 +37,9 @@ type appleJWKS struct {
 type AppleVerifier struct {
 	bundleID string
 
-	mu       sync.RWMutex
-	keys     map[string]*rsa.PublicKey // keyed by kid
-	fetched  time.Time
-	fetchErr error
+	mu      sync.RWMutex
+	keys    map[string]*rsa.PublicKey // keyed by kid
+	fetched time.Time
 }
 
 func NewAppleVerifier(bundleID string) *AppleVerifier {
@@ -104,7 +103,6 @@ func (v *AppleVerifier) refresh() error {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(appleJWKSURL)
 	if err != nil {
-		v.fetchErr = err
 		return fmt.Errorf("fetch apple jwks: %w", err)
 	}
 	defer resp.Body.Close()
@@ -131,7 +129,6 @@ func (v *AppleVerifier) refresh() error {
 	}
 	v.keys = keys
 	v.fetched = time.Now()
-	v.fetchErr = nil
 	return nil
 }
 

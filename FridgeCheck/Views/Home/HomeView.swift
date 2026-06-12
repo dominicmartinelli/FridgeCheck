@@ -4,7 +4,6 @@ import UIKit
 
 struct HomeView: View {
     @Binding var selectedTab: Int
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \ScanRecord.date, order: .reverse) private var recentScans: [ScanRecord]
     @Query(sort: \MealPlan.date) private var mealPlans: [MealPlan]
     @Query private var pantryItems: [PantryItem]
@@ -51,6 +50,24 @@ struct HomeView: View {
                 .padding()
             }
             .navigationTitle("Fridge Check")
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    NavigationLink {
+                        ShoppingListView()
+                    } label: {
+                        Image(systemName: "cart")
+                            .accessibilityLabel("Shopping List")
+                    }
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        HelpView()
+                    } label: {
+                        Image(systemName: "questionmark.circle")
+                            .accessibilityLabel("Help")
+                    }
+                }
+            }
             .navigationDestination(isPresented: Binding(
                 get: { rerunViewModel != nil },
                 set: { if !$0 { rerunViewModel = nil } }

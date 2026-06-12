@@ -49,7 +49,11 @@ func main() {
 	r := chi.NewRouter()
 
 	// Global middleware
-	r.Use(chiMiddleware.RealIP)
+	// Trust X-Forwarded-For only when a proxy we control sets it; otherwise
+	// clients could spoof the header to dodge the per-IP rate limits.
+	if cfg.BehindProxy {
+		r.Use(chiMiddleware.RealIP)
+	}
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
@@ -80,6 +84,7 @@ func main() {
 		r.Use(middleware.Auth(cfg.JWTSecret))
 
 		r.With(middleware.MaxBodySize(8 * 1024)).Get("/v1/me", meHandler.Get)
+		r.With(middleware.MaxBodySize(8 * 1024)).Delete("/v1/me", meHandler.Delete)
 
 		// Scan: up to 5 images × ~1 MB base64 each + slack = 16 MB cap
 		r.With(middleware.MaxBodySize(16 * 1024 * 1024)).Post("/v1/scan", scanHandler.Post)

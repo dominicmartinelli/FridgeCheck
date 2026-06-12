@@ -26,7 +26,7 @@ func (h *MeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "user_not_found", nil)
 		return
 	}
-	usage, err := h.db.UsageToday(userID)
+	usage, err := h.db.UsageLast24h(userID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "db_error", nil)
 		return
@@ -38,4 +38,15 @@ func (h *MeHandler) Get(w http.ResponseWriter, r *http.Request) {
 		"usageToday": map[string]int{"scan": usage[db.EndpointScan], "recipes": usage[db.EndpointRecipes]},
 		"limits":     map[string]int{"scan": h.scanLimitFor(user.Tier), "recipes": h.recipesLimitFor(user.Tier)},
 	})
+}
+
+func (h *MeHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFromContext(r.Context())
+	if err := h.db.DeleteUser(userID); err != nil {
+		slog.Error("DeleteUser failed", "err", err, "uid", userID)
+		writeError(w, http.StatusInternalServerError, "db_error", nil)
+		return
+	}
+	slog.Info("account deleted", "uid", userID)
+	w.WriteHeader(http.StatusNoContent)
 }

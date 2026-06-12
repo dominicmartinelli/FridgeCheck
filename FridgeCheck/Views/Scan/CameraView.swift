@@ -2,15 +2,24 @@ import SwiftUI
 import SwiftData
 
 struct CameraView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var preferences: [UserPreferences]
     @State private var viewModel = ScanViewModel()
     @State private var showCameraPicker = false
     @State private var showPhotoPicker = false
     @State private var navigateToResults = false
+    @State private var showOverLimitAlert = false
 
-    private var userPreferences: UserPreferences? {
-        preferences.first
+    private static let maxPhotos = 5
+
+    private var isAtLimit: Bool {
+        viewModel.capturedImages.count >= Self.maxPhotos
+    }
+
+    private var isOverLimit: Bool {
+        viewModel.capturedImages.count > Self.maxPhotos
+    }
+
+    private var remainingSlots: Int {
+        max(0, Self.maxPhotos - viewModel.capturedImages.count)
     }
 
     var body: some View {
@@ -45,11 +54,21 @@ struct CameraView: View {
                     .ignoresSafeArea()
             }
             .sheet(isPresented: $showPhotoPicker) {
-                PhotoPicker(images: $viewModel.capturedImages)
+                PhotoPicker(images: $viewModel.capturedImages, selectionLimit: max(1, remainingSlots))
                     .ignoresSafeArea()
             }
             .navigationDestination(isPresented: $navigateToResults) {
                 ScanResultsView(viewModel: viewModel)
+            }
+            .alert("Too many photos", isPresented: $showOverLimitAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("The limit is \(Self.maxPhotos) photos per scan. You have \(viewModel.capturedImages.count). Tap the × on a thumbnail to remove extras.")
+            }
+            .onChange(of: viewModel.capturedImages.count) { _, _ in
+                if isOverLimit {
+                    showOverLimitAlert = true
+                }
             }
         }
     }
@@ -146,11 +165,12 @@ struct CameraView: View {
                         Text("Add")
                             .font(.caption2)
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(isAtLimit ? Color.secondary.opacity(0.4) : .secondary)
                     .frame(width: 70, height: 70)
                     .background(Color(.systemGray6))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .disabled(isAtLimit)
             }
             .padding(.horizontal)
             .padding(.vertical, 10)
@@ -162,6 +182,13 @@ struct CameraView: View {
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
+            if isAtLimit {
+                Text("\(viewModel.capturedImages.count) of \(Self.maxPhotos) photos — remove one to add another")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
+
             HStack(spacing: 16) {
                 Button {
                     showCameraPicker = true
@@ -170,10 +197,11 @@ struct CameraView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
-                        .background(Color.accentColor)
+                        .background(isAtLimit ? Color.accentColor.opacity(0.4) : Color.accentColor)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .disabled(isAtLimit)
 
                 Button {
                     showPhotoPicker = true
@@ -183,9 +211,10 @@ struct CameraView: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 54)
                         .background(Color(.systemGray5))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(isAtLimit ? Color.primary.opacity(0.4) : .primary)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .disabled(isAtLimit)
             }
 
             if !viewModel.capturedImages.isEmpty {
@@ -199,10 +228,11 @@ struct CameraView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .frame(height: 54)
-                    .background(Color.green)
+                    .background(isOverLimit ? Color.green.opacity(0.4) : Color.green)
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
+                .disabled(isOverLimit)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
