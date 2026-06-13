@@ -8,7 +8,7 @@ struct CameraView: View {
     @State private var navigateToResults = false
     @State private var showOverLimitAlert = false
 
-    private static let maxPhotos = 5
+    private static let maxPhotos = 15
 
     private var isAtLimit: Bool {
         viewModel.capturedImages.count >= Self.maxPhotos

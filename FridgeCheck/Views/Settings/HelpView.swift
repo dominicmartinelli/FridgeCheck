@@ -7,12 +7,12 @@ struct HelpView: View {
                 HelpItem(
                     icon: "camera.viewfinder",
                     title: "How it works",
-                    text:"Take or pick up to 5 photos of your fridge, then tap Analyze. We identify ingredients, then generate recipes from the ones you select."
+                    text:"Take or pick up to 15 photos of your fridge, then tap Analyze. We identify ingredients, then generate recipes from the ones you select."
                 )
                 HelpItem(
-                    icon: "5.circle",
-                    title: "Photo limit: 5 per scan",
-                    text:"Each scan uses up to 5 photos. More photos mean higher cost and longer waits with diminishing returns — 5 well-framed shots usually cover a full fridge. To swap a photo, tap the × on its thumbnail."
+                    icon: "15.circle",
+                    title: "Photo limit: 15 per scan",
+                    text:"Each scan uses up to 15 photos — enough to cover every shelf and drawer. More photos mean slightly longer waits, so skip duplicates. To swap a photo, tap the × on its thumbnail."
                 )
                 HelpItem(
                     icon: "lightbulb",

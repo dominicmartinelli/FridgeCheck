@@ -40,7 +40,7 @@ struct CameraPicker: UIViewControllerRepresentable {
 
 struct PhotoPicker: UIViewControllerRepresentable {
     @Binding var images: [UIImage]
-    var selectionLimit: Int = 5
+    var selectionLimit: Int = 15
     @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> PHPickerViewController {

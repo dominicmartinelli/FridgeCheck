@@ -181,8 +181,10 @@ func (c *Client) AnalyzeImages(ctx context.Context, imagesB64 []string, model st
 	})
 
 	text, usage, err := c.call(ctx, requestBody{
-		Model:        model,
-		MaxTokens:    2048,
+		Model: model,
+		// Headroom for the long ingredient lists a 15-photo scan can produce;
+		// this is a cap, not spend — only generated tokens are billed.
+		MaxTokens:    4096,
 		Messages:     []message{{Role: "user", Content: blocks}},
 		OutputConfig: &outputConfig{Format: outputFormat{Type: "json_schema", Schema: json.RawMessage(ingredientsSchema)}},
 	})

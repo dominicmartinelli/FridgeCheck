@@ -86,7 +86,7 @@ func main() {
 		r.With(middleware.MaxBodySize(8 * 1024)).Get("/v1/me", meHandler.Get)
 		r.With(middleware.MaxBodySize(8 * 1024)).Delete("/v1/me", meHandler.Delete)
 
-		// Scan: up to 5 images × ~1 MB base64 each + slack = 16 MB cap
+		// Scan: up to 15 images × ~0.5 MB base64 each (1024px q0.6) + slack = 16 MB cap
 		r.With(middleware.MaxBodySize(16 * 1024 * 1024)).Post("/v1/scan", scanHandler.Post)
 		// Recipes: JSON only, 64 KB is plenty
 		r.With(middleware.MaxBodySize(64 * 1024)).Post("/v1/recipes", recipesHandler.Post)

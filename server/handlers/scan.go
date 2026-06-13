@@ -64,7 +64,7 @@ func (h *ScanHandler) Post(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "no_images", nil)
 		return
 	}
-	if len(req.Images) > 5 {
+	if len(req.Images) > 15 {
 		writeError(w, http.StatusBadRequest, "too_many_images", nil)
 		return
 	}

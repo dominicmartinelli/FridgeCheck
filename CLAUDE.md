@@ -52,7 +52,7 @@ ViewModels use the `@Observable` macro (not `ObservableObject`). ModelContext is
 - `Services/AuthService.swift` — `@Observable @MainActor` singleton. Owns `sessionToken`, `userEmail`, `isSigningIn`, `errorMessage`. Exchanges Apple identity tokens at `/v1/auth/apple`.
 - `Services/KeychainStore.swift` — Thin wrapper over `SecItem*` keyed by service `com.fridgecheck.app`. Accounts used: `session_token`, `session_email`. Access class is `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly`.
 - `Services/FridgeCheckAPIService.swift` — `actor` that wraps backend calls. Entry points: `analyzeImages(_:sessionToken:)` → `POST /v1/scan`, and `generateRecipes(...sessionToken:)` → `POST /v1/recipes`. Both require a non-empty session token and throw `APIError.notSignedIn` otherwise.
-- `Services/ImageService.swift` — `UIViewControllerRepresentable` wrappers for `CameraPicker` and `PhotoPicker` (up to 5 images). Note: the resize/JPEG logic actually lives in `FridgeCheckAPIService` (`resizeImage(_:maxDimension:)`), not here.
+- `Services/ImageService.swift` — `UIViewControllerRepresentable` wrappers for `CameraPicker` and `PhotoPicker` (up to 15 images). Note: the resize/JPEG logic actually lives in `FridgeCheckAPIService` (`resizeImage(_:maxDimension:)`), not here.
 - `ViewModels/ScanViewModel.swift` — The most complex ViewModel; orchestrates the full scan flow: capture → analyze → select ingredients → generate recipes → save to pantry/history. Takes `sessionToken: String` on its async methods.
 - `Models/UserPreferences.swift` — SwiftData model storing dietary preferences only: `dietaryRestrictions`, `allergies`, `cuisinePreferences`, `servingSize`. No credentials.
 
