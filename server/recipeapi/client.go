@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -132,18 +133,22 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 		return nil, fmt.Errorf("%w: preferences not expressible as catalog filters", ErrUnavailable)
 	}
 
-	anchors := c.resolveAnchors(ctx, input.Ingredients)
+	anchors, resolvedCount := c.resolveAnchorsVerbose(ctx, input.Ingredients)
 	if len(anchors) == 0 {
+		slog.Info("recipe-api diag", "stage", "resolve", "names", len(input.Ingredients), "resolved", 0)
 		return nil, fmt.Errorf("%w: no detected ingredients resolved", ErrUnavailable)
 	}
 
 	// ingredients= is ALL-match, so start specific and relax: 3 anchors, 2, 1.
 	var candidates []searchResult
+	searchCounts := map[int]int{}
 	for n := min(3, len(anchors)); n >= 1; n-- {
 		results, err := c.search(ctx, anchors[:n], plan)
 		if err != nil {
+			slog.Info("recipe-api diag", "stage", "search", "anchors", n, "err", err.Error())
 			return nil, err
 		}
+		searchCounts[n] = len(results)
 		if len(results) > 0 {
 			candidates = results
 			break
@@ -151,6 +156,8 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 	}
 
 	var recipes []anthropic.Recipe
+	var passed, detailErrors int
+	creditBlocked := false
 	for _, cand := range candidates {
 		if len(recipes) >= maxRecipes {
 			break
@@ -158,21 +165,33 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 		if !cand.passes(plan) {
 			continue
 		}
+		passed++
 		detail, err := c.detail(ctx, cand.ID)
 		if err != nil {
 			if errors.Is(err, ErrUnavailable) {
+				creditBlocked = true
 				break // credits gone mid-request: keep what we have
 			}
+			detailErrors++
 			continue // one bad recipe shouldn't sink the rest
 		}
 		recipes = append(recipes, detail)
 	}
+
+	slog.Info("recipe-api diag",
+		"names", len(input.Ingredients), "resolved", resolvedCount,
+		"anchors", len(anchors),
+		"search3", searchCounts[3], "search2", searchCounts[2], "search1", searchCounts[1],
+		"candidates", len(candidates), "passed_filters", passed,
+		"detail_errors", detailErrors, "credit_blocked", creditBlocked,
+		"returned", len(recipes))
 	return recipes, nil
 }
 
-// resolveAnchors maps free-text detected names to ingredient UUIDs and orders
-// them so proteins, then produce/staples, lead the ALL-match search.
-func (c *Client) resolveAnchors(ctx context.Context, names []string) []string {
+// resolveAnchorsVerbose maps free-text detected names to ingredient UUIDs and
+// orders them so proteins, then produce/staples, lead the ALL-match search.
+// Returns the ordered UUIDs and how many distinct names resolved.
+func (c *Client) resolveAnchorsVerbose(ctx context.Context, names []string) ([]string, int) {
 	if len(names) > 8 {
 		names = names[:8] // bound lookup fan-out per request
 	}
@@ -203,7 +222,7 @@ func (c *Client) resolveAnchors(ctx context.Context, names []string) []string {
 	for i, h := range hits {
 		ids[i] = h.ID
 	}
-	return ids
+	return ids, len(hits)
 }
 
 func categoryRank(category string) int {
