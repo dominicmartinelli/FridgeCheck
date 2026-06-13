@@ -23,9 +23,13 @@ struct RecipeSuggestionsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if !viewModel.suggestedRecipes.isEmpty {
-                    Text("\(viewModel.suggestedRecipes.count) recipes")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Button {
+                        saveAllRecipes()
+                    } label: {
+                        Label("Save All", systemImage: allRecipesSaved ? "bookmark.fill" : "bookmark")
+                            .labelStyle(.titleAndIcon)
+                    }
+                    .disabled(allRecipesSaved)
                 }
             }
         }
@@ -134,20 +138,13 @@ struct RecipeSuggestionsView: View {
                     .buttonStyle(.plain)
                 }
 
-                // Save scan record button
-                Button {
-                    viewModel.saveScanRecord(modelContext: modelContext)
-                } label: {
-                    Label("Save Scan to History", systemImage: "clock.arrow.circlepath")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
-                        .background(Color(.systemGray6))
-                        .foregroundStyle(.secondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding(.top, 8)
+                // The scan itself is saved to history automatically after
+                // analysis; recipes persist via the bookmarks or Save All.
+                Label("Scan saved to history — bookmark recipes to keep them", systemImage: "checkmark.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
@@ -156,10 +153,20 @@ struct RecipeSuggestionsView: View {
 
     // MARK: - Actions
 
+    private var allRecipesSaved: Bool {
+        viewModel.suggestedRecipes.allSatisfy { savedRecipeIDs.contains($0.id) }
+    }
+
     private func saveRecipe(_ recipe: Recipe) {
         guard !savedRecipeIDs.contains(recipe.id) else { return }
         modelContext.insert(recipe)
         savedRecipeIDs.insert(recipe.id)
+    }
+
+    private func saveAllRecipes() {
+        for recipe in viewModel.suggestedRecipes {
+            saveRecipe(recipe)
+        }
     }
 }
 

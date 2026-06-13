@@ -21,8 +21,9 @@ final class ScanViewModel {
     var showError = false
 
     private let apiService = FridgeCheckAPIService()
+    private var savedRecord: ScanRecord?
 
-    func analyzeImages(sessionToken: String) async {
+    func analyzeImages(sessionToken: String, modelContext: ModelContext) async {
         guard !capturedImages.isEmpty else { return }
 
         isAnalyzing = true
@@ -38,6 +39,7 @@ final class ScanViewModel {
                 )
             }
             self.isAnalyzing = false
+            autoSaveScanRecord(modelContext: modelContext)
         } catch {
             handleAPIError(error)
             self.isAnalyzing = false
@@ -120,8 +122,26 @@ final class ScanViewModel {
         capturedImages.remove(at: index)
     }
 
-    func saveScanRecord(modelContext: ModelContext) {
-        guard !capturedImages.isEmpty else { return }
+    // Saves the scan to history automatically after a successful analysis —
+    // the old manual "Save Scan to History" button was easy to miss. One
+    // record per scan session: re-analyzing (e.g. Try Again) updates the
+    // existing record instead of duplicating it. Recipes are intentionally
+    // not attached — linking them would force-insert every generated recipe
+    // into the store; recipes persist only when the user saves them.
+    private func autoSaveScanRecord(modelContext: ModelContext) {
+        if let record = savedRecord {
+            record.detectedIngredients = detectedIngredients.map(\.name)
+            return
+        }
+
+        // Insert the record immediately (so the flag and history entry are
+        // race-free) and backfill the image blobs once encoding finishes.
+        let record = ScanRecord(
+            imageDataItems: [],
+            detectedIngredients: detectedIngredients.map(\.name)
+        )
+        modelContext.insert(record)
+        savedRecord = record
 
         let images = capturedImages
         Task {
@@ -134,14 +154,7 @@ final class ScanViewModel {
                         .jpegData(compressionQuality: 0.6)
                 }
             }.value
-            guard !imageDataItems.isEmpty else { return }
-
-            let record = ScanRecord(
-                imageDataItems: imageDataItems,
-                detectedIngredients: detectedIngredients.map(\.name),
-                recipes: suggestedRecipes
-            )
-            modelContext.insert(record)
+            record.imageDataItems = imageDataItems
         }
     }
 
@@ -152,5 +165,6 @@ final class ScanViewModel {
         isAnalyzing = false
         isGeneratingRecipes = false
         errorMessage = nil
+        savedRecord = nil
     }
 }

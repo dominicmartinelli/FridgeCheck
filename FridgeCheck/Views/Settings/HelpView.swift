@@ -7,7 +7,7 @@ struct HelpView: View {
                 HelpItem(
                     icon: "camera.viewfinder",
                     title: "How it works",
-                    text:"Take or pick up to 15 photos of your fridge, then tap Analyze. We identify ingredients, then generate recipes from the ones you select."
+                    text:"Take or pick up to 15 photos of your fridge, then tap Analyze. We identify ingredients, then generate recipes from the ones you select. Scans are saved to your history automatically; bookmark a recipe (or tap Save All) to keep it."
                 )
                 HelpItem(
                     icon: "15.circle",

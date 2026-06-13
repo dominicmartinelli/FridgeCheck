@@ -64,7 +64,10 @@ struct ScanResultsView: View {
         }
         .task {
             if !viewModel.capturedImages.isEmpty && viewModel.detectedIngredients.isEmpty && !viewModel.isAnalyzing {
-                await viewModel.analyzeImages(sessionToken: AuthService.shared.sessionToken ?? "")
+                await viewModel.analyzeImages(
+                    sessionToken: AuthService.shared.sessionToken ?? "",
+                    modelContext: modelContext
+                )
             }
         }
     }
@@ -118,7 +121,10 @@ struct ScanResultsView: View {
         } actions: {
             Button("Try Again") {
                 Task {
-                    await viewModel.analyzeImages(sessionToken: AuthService.shared.sessionToken ?? "")
+                    await viewModel.analyzeImages(
+                        sessionToken: AuthService.shared.sessionToken ?? "",
+                        modelContext: modelContext
+                    )
                 }
             }
             .buttonStyle(.borderedProminent)
