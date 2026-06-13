@@ -16,7 +16,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -195,7 +194,6 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 	// only matched a single ingredient.
 	overlap := map[string]int{}
 	byID := map[string]searchResult{}
-	var searchHits int
 	for _, name := range anchors {
 		results, err := c.qSearch(ctx, name, plan)
 		if err != nil {
@@ -204,7 +202,6 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 			}
 			continue // one failed search shouldn't sink the rest
 		}
-		searchHits += len(results)
 		for _, r := range results {
 			overlap[r.ID]++
 			byID[r.ID] = r
@@ -220,8 +217,6 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 	})
 
 	var recipes []anthropic.Recipe
-	var passed, detailErrors, allergenExcluded, topOverlap int
-	creditBlocked := false
 	for _, cand := range candidates {
 		if len(recipes) >= maxRecipes {
 			break
@@ -229,35 +224,21 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 		if !cand.passes(plan) {
 			continue
 		}
-		passed++
 		detail, err := c.detail(ctx, cand.ID)
 		if err != nil {
 			if errors.Is(err, ErrUnavailable) {
-				creditBlocked = true
 				break // credits gone mid-request: keep what we have
 			}
-			detailErrors++
-			continue
+			continue // one bad recipe shouldn't sink the rest
 		}
 		// Allergy safety net: the full ingredient list is only available here,
 		// so drop any recipe that actually contains an excluded allergen even
 		// if the catalog didn't flag it in not_suitable_for.
 		if containsAllergen(detail, plan.excludeKeywords) {
-			allergenExcluded++
 			continue
-		}
-		if overlap[cand.ID] > topOverlap {
-			topOverlap = overlap[cand.ID]
 		}
 		recipes = append(recipes, detail)
 	}
-
-	slog.Info("recipe-api diag",
-		"anchors", len(anchors), "search_hits", searchHits,
-		"unique_candidates", len(candidates), "passed_filters", passed,
-		"allergen_excluded", allergenExcluded, "top_overlap", topOverlap,
-		"detail_errors", detailErrors, "credit_blocked", creditBlocked,
-		"returned", len(recipes))
 	return recipes, nil
 }
 
