@@ -78,13 +78,11 @@ func (h *RecipesHandler) Post(w http.ResponseWriter, r *http.Request) {
 	// any error) generate with Claude. The reserved usage event stays either
 	// way — curated responses draw quota too, just with zero token counts.
 	if h.recipeAPI != nil {
-		curated, err := h.recipeAPI.FindByIngredients(r.Context(), input, 3)
+		curated, err := h.recipeAPI.FindByIngredients(r.Context(), input, 8)
 		if err == nil && len(curated) >= 2 {
-			slog.Info("recipes ok (curated)", "uid", userID, "recipes", len(curated))
 			writeJSON(w, http.StatusOK, recipesResponse{Recipes: curated})
 			return
 		}
-		slog.Info("recipe-api fallback to claude", "uid", userID, "matches", len(curated), "err", err)
 	}
 
 	recipes, usage, err := h.anthropic.GenerateRecipes(r.Context(), input, h.model)

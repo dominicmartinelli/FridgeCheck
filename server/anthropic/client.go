@@ -219,11 +219,13 @@ func (c *Client) GenerateRecipes(ctx context.Context, input RecipeInput, model s
 	}
 	parts = append(parts, fmt.Sprintf("Serving size: %d people.", input.ServingSize))
 	parts = append(parts, `
-Suggest 3 recipes I can make using ONLY the ingredients listed above. Do not suggest recipes that require significant ingredients not in the list. You may assume basic pantry staples (salt, pepper, oil, water, common spices) are available. Provide complete step-by-step instructions, keeping each step to one short sentence.`)
+Suggest 8 recipes I can make using ONLY the ingredients listed above. Do not suggest recipes that require significant ingredients not in the list. You may assume basic pantry staples (salt, pepper, oil, water, common spices) are available. Provide complete step-by-step instructions, keeping each step to one short sentence.`)
 
 	text, usage, err := c.call(ctx, requestBody{
-		Model:        model,
-		MaxTokens:    4096,
+		Model: model,
+		// Headroom for 8 recipes; a cap, not spend — only generated tokens
+		// are billed.
+		MaxTokens:    8192,
 		Messages:     []message{{Role: "user", Content: strings.Join(parts, "\n")}},
 		OutputConfig: &outputConfig{Format: outputFormat{Type: "json_schema", Schema: json.RawMessage(recipesSchema)}},
 	})
