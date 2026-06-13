@@ -69,7 +69,7 @@ ViewModels use the `@Observable` macro (not `ObservableObject`). ModelContext is
 - Error enum: `FridgeCheckAPIService.APIError` with cases `notSignedIn`, `sessionExpired` (HTTP 401 — callers sign the user out), `invalidImage`, `networkError(Error)`, `decodingError(String)`, `quotaExceeded(used:limit:)` (parsed from HTTP 429 body), `serverError(Int, String)`. Auth errors live in the separate `AuthError` enum in `AuthService.swift`.
 - Quota model: free tier is 5 scans and 20 recipe generations per rolling 24-hour window per user; the server returns HTTP 429 with `{error, used, limit}` which is surfaced as `APIError.quotaExceeded`. The unlimited tier has no cap.
 - The server sends `output_config` (structured outputs) on every Claude request, so configured models must support it: Haiku 4.5 / Sonnet 4.6 or newer — **not** Sonnet 4.5.
-- Recipe hybrid: when `recipe_api_key` is set in the server config, `POST /v1/recipes` first tries curated recipes from recipe-api.com (`server/recipeapi/`) and falls back to Claude generation when matches are thin (<2), preferences can't be expressed as catalog filters (e.g. Paleo, shellfish allergy), or credits are in cool-down. The response shape is identical either way — the app can't tell the sources apart.
+- Recipe hybrid: when `recipe_api_key` is set in the server config, `POST /v1/recipes` first tries curated recipes from recipe-api.com (`server/recipeapi/`) and falls back to Claude generation when matches are thin (<2), preferences can't be expressed as catalog filters (e.g. Paleo, shellfish allergy), or credits are in cool-down. Each recipe carries a server-set `source` field ("curated" or "generated") which the app shows as a badge (`SourceBadge` in `RecipeSuggestionsView.swift`).
 
 ### Patterns to Follow
 

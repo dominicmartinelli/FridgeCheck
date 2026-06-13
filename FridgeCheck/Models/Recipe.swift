@@ -16,6 +16,9 @@ final class Recipe {
     var isFavorite: Bool
     var dateCreated: Date
     var sourceIngredients: [String]
+    // "curated" (recipe-api.com, USDA-verified) or "generated" (Claude).
+    // Empty for recipes saved before this field existed.
+    var source: String = ""
 
     var totalTime: Int {
         prepTime + cookTime
@@ -32,7 +35,8 @@ final class Recipe {
         cuisineType: String = "",
         difficulty: String = "Medium",
         isFavorite: Bool = false,
-        sourceIngredients: [String] = []
+        sourceIngredients: [String] = [],
+        source: String = ""
     ) {
         self.id = UUID()
         self.title = title
@@ -47,5 +51,6 @@ final class Recipe {
         self.isFavorite = isFavorite
         self.dateCreated = Date()
         self.sourceIngredients = sourceIngredients
+        self.source = source
     }
 }

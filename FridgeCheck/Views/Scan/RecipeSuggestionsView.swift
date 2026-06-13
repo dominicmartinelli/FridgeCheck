@@ -195,6 +195,7 @@ private struct RecipeCard: View {
                         }
 
                         DifficultyBadge(difficulty: recipe.difficulty)
+                        SourceBadge(source: recipe.source)
                     }
                 }
 
@@ -331,6 +332,37 @@ private struct RecipeCard: View {
     }
 }
 
+// MARK: - Source Badge
+
+/// Shows where a recipe came from: the curated catalog (USDA-verified
+/// nutrition) or AI generation. Hidden for recipes saved before the server
+/// started sending a source.
+struct SourceBadge: View {
+    let source: String
+
+    var body: some View {
+        switch source {
+        case "curated":
+            badge("Curated", icon: "checkmark.seal.fill", color: .teal)
+        case "generated":
+            badge("AI", icon: "sparkles", color: .purple)
+        default:
+            EmptyView()
+        }
+    }
+
+    private func badge(_ text: String, icon: String, color: Color) -> some View {
+        Label(text, systemImage: icon)
+            .font(.caption2)
+            .fontWeight(.medium)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(color.opacity(0.15))
+            .foregroundStyle(color)
+            .clipShape(Capsule())
+    }
+}
+
 // MARK: - Difficulty Badge
 
 private struct DifficultyBadge: View {
@@ -447,6 +479,7 @@ struct RecipeDetailView: View {
                                 .font(.subheadline)
                         }
                         DifficultyBadge(difficulty: recipe.difficulty)
+                        SourceBadge(source: recipe.source)
                         Label("\(recipe.totalTime) min", systemImage: "timer")
                             .font(.subheadline)
                     }

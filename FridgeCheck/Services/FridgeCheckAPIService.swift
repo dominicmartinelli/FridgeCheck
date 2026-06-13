@@ -27,6 +27,7 @@ struct RecipeResult: Codable {
     let nutritionalInfo: String
     let cuisineType: String
     let difficulty: String
+    let source: String
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
@@ -37,6 +38,7 @@ struct RecipeResult: Codable {
         nutritionalInfo = (try? c.decode(String.self, forKey: .nutritionalInfo)) ?? ""
         cuisineType = (try? c.decode(String.self, forKey: .cuisineType)) ?? ""
         difficulty = (try? c.decode(String.self, forKey: .difficulty)) ?? "Medium"
+        source = (try? c.decode(String.self, forKey: .source)) ?? ""
         if let i = try? c.decode(Int.self, forKey: .prepTime) {
             prepTime = i
         } else if let s = try? c.decode(String.self, forKey: .prepTime), let i = Int(s) {

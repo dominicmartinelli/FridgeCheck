@@ -363,6 +363,7 @@ func mapRecipe(d detailRecipe) anthropic.Recipe {
 		CuisineType: d.Cuisine,
 		PrepTime:    isoMinutes(d.Meta.ActiveTime),
 		CookTime:    isoMinutes(d.Meta.PassiveTime),
+		Source:      "curated",
 	}
 	switch d.Difficulty {
 	case "Easy":

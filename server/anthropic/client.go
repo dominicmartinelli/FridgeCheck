@@ -48,6 +48,9 @@ type Recipe struct {
 	NutritionalInfo string   `json:"nutritionalInfo"`
 	CuisineType     string   `json:"cuisineType"`
 	Difficulty      string   `json:"difficulty"`
+	// Source is set server-side, not by the model: "generated" (Claude) or
+	// "curated" (recipe-api.com). The app shows it as a badge.
+	Source string `json:"source"`
 }
 
 type RecipeInput struct {
@@ -232,6 +235,9 @@ Suggest 3 recipes I can make using ONLY the ingredients listed above. Do not sug
 	}
 	if err := json.Unmarshal([]byte(extractJSON(text)), &parsed); err != nil {
 		return nil, usage, fmt.Errorf("decode recipes: %w (raw: %s)", err, text)
+	}
+	for i := range parsed.Recipes {
+		parsed.Recipes[i].Source = "generated"
 	}
 	return parsed.Recipes, usage, nil
 }

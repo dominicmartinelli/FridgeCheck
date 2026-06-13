@@ -79,7 +79,8 @@ final class ScanViewModel {
                     nutritionalInfo: result.nutritionalInfo,
                     cuisineType: result.cuisineType,
                     difficulty: result.difficulty,
-                    sourceIngredients: selectedIngredients
+                    sourceIngredients: selectedIngredients,
+                    source: result.source
                 )
             }
             self.isGeneratingRecipes = false
