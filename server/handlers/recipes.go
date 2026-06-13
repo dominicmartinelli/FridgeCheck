@@ -9,17 +9,19 @@ import (
 	"fridgecheck/anthropic"
 	"fridgecheck/db"
 	"fridgecheck/middleware"
+	"fridgecheck/recipeapi"
 )
 
 type RecipesHandler struct {
 	db        *db.DB
 	anthropic *anthropic.Client
+	recipeAPI *recipeapi.Client // nil when recipe_api_key is not configured
 	model     string
 	limitFor  func(tier string) int
 }
 
-func NewRecipesHandler(database *db.DB, client *anthropic.Client, model string, limitFor func(string) int) *RecipesHandler {
-	return &RecipesHandler{db: database, anthropic: client, model: model, limitFor: limitFor}
+func NewRecipesHandler(database *db.DB, client *anthropic.Client, recipeAPI *recipeapi.Client, model string, limitFor func(string) int) *RecipesHandler {
+	return &RecipesHandler{db: database, anthropic: client, recipeAPI: recipeAPI, model: model, limitFor: limitFor}
 }
 
 type recipesResponse struct {
@@ -69,6 +71,20 @@ func (h *RecipesHandler) Post(w http.ResponseWriter, r *http.Request) {
 		slog.Error("reserve usage failed", "err", err, "uid", userID)
 		writeError(w, http.StatusInternalServerError, "db_error", nil)
 		return
+	}
+
+	// Hybrid: serve curated catalog recipes when we can match at least two;
+	// otherwise (thin matches, unmappable preferences, credit cool-down, or
+	// any error) generate with Claude. The reserved usage event stays either
+	// way — curated responses draw quota too, just with zero token counts.
+	if h.recipeAPI != nil {
+		curated, err := h.recipeAPI.FindByIngredients(r.Context(), input, 3)
+		if err == nil && len(curated) >= 2 {
+			slog.Info("recipes ok (curated)", "uid", userID, "recipes", len(curated))
+			writeJSON(w, http.StatusOK, recipesResponse{Recipes: curated})
+			return
+		}
+		slog.Info("recipe-api fallback to claude", "uid", userID, "matches", len(curated), "err", err)
 	}
 
 	recipes, usage, err := h.anthropic.GenerateRecipes(r.Context(), input, h.model)

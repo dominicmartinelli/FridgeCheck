@@ -21,6 +21,10 @@ type Config struct {
 	JWTSecret      string `toml:"jwt_secret"`
 	AppleBundleID  string `toml:"apple_bundle_id"`
 
+	// Optional recipe-api.com key (rapi_...). When set, /v1/recipes tries
+	// curated catalog matches first and falls back to Claude generation.
+	RecipeAPIKey string `toml:"recipe_api_key"`
+
 	AnthropicAPIKey      string `toml:"anthropic_api_key"`
 	AnthropicModel       string `toml:"anthropic_model"`         // fallback default
 	AnthropicScanModel   string `toml:"anthropic_scan_model"`    // overrides for /v1/scan

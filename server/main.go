@@ -21,6 +21,7 @@ import (
 	"fridgecheck/db"
 	"fridgecheck/handlers"
 	"fridgecheck/middleware"
+	"fridgecheck/recipeapi"
 )
 
 func main() {
@@ -41,6 +42,11 @@ func main() {
 	defer database.Close()
 
 	anth := anthropic.NewClient(cfg.AnthropicAPIKey)
+	var recipeAPI *recipeapi.Client
+	if cfg.RecipeAPIKey != "" {
+		recipeAPI = recipeapi.NewClient(cfg.RecipeAPIKey)
+		log.Info("recipe-api enabled for /v1/recipes")
+	}
 	appleVerifier := auth.NewAppleVerifier(cfg.AppleBundleID)
 
 	rootCtx, rootCancel := context.WithCancel(context.Background())
@@ -78,7 +84,7 @@ func main() {
 	// Authenticated
 	meHandler := handlers.NewMeHandler(database, cfg.ScanLimit, cfg.RecipesLimit)
 	scanHandler := handlers.NewScanHandler(database, anth, cfg.ScanModel(), cfg.ScanLimit)
-	recipesHandler := handlers.NewRecipesHandler(database, anth, cfg.RecipesModel(), cfg.RecipesLimit)
+	recipesHandler := handlers.NewRecipesHandler(database, anth, recipeAPI, cfg.RecipesModel(), cfg.RecipesLimit)
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.Auth(cfg.JWTSecret))
