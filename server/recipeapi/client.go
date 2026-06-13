@@ -3,6 +3,11 @@
 // Claude generation otherwise. Search/browse calls are free; each unique
 // recipe detail costs 1 credit, so detail fetches are capped per request and
 // any 429 puts the whole curated path into a cool-down.
+//
+// Matching uses the free-text q= search (recipe name/description). The
+// /ingredients endpoint is a USDA *nutrition* database whose UUIDs are a
+// different ID space from the recipe ingredient graph, so it can't be used to
+// resolve names for the ingredients= filter — q= is the workable path.
 package recipeapi
 
 import (
@@ -26,6 +31,13 @@ import (
 
 const defaultBaseURL = "https://recipe-api.com/api/v1"
 
+// Per-request bounds. q-searches are free but rate-limited per minute, so cap
+// how many ingredients we probe; detail fetches cost 1 credit each.
+const (
+	maxIngredientSearches = 6
+	searchPageSize        = 20
+)
+
 // ErrUnavailable means the curated path can't serve this request (unmappable
 // dietary/allergy constraints, credit cool-down, no matches). Callers fall
 // back to Claude; it is never a user-facing error.
@@ -37,22 +49,24 @@ type Client struct {
 	http   *http.Client
 
 	mu           sync.Mutex
-	ingredients  map[string]resolvedIngredient // lowercased query -> resolution ("" id = known miss)
 	blockedUntil time.Time
-}
-
-type resolvedIngredient struct {
-	ID       string
-	Category string
 }
 
 func NewClient(apiKey string) *Client {
 	return &Client{
-		apiKey:      apiKey,
-		base:        defaultBaseURL,
-		http:        &http.Client{Timeout: 20 * time.Second},
-		ingredients: map[string]resolvedIngredient{},
+		apiKey: apiKey,
+		base:   defaultBaseURL,
+		http:   &http.Client{Timeout: 20 * time.Second},
 	}
+}
+
+// Generic pantry staples produce noisy q-search matches (q=butter →
+// buttercream desserts) and rarely define a dish, so they're skipped as
+// search anchors.
+var genericStaples = map[string]bool{
+	"salt": true, "pepper": true, "water": true, "sugar": true,
+	"oil": true, "olive oil": true, "vegetable oil": true, "butter": true,
+	"flour": true, "milk": true, "ice": true,
 }
 
 // Dietary restrictions the API can express directly as flags.
@@ -118,6 +132,26 @@ func planFor(input anthropic.RecipeInput) (searchPlan, bool) {
 	return p, true
 }
 
+// anchorNames picks the ingredients worth searching on: drop generic staples,
+// dedupe, and cap the count to bound rate-limit exposure.
+func anchorNames(ingredients []string) []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, raw := range ingredients {
+		name := strings.TrimSpace(raw)
+		key := strings.ToLower(name)
+		if name == "" || genericStaples[key] || seen[key] {
+			continue
+		}
+		seen[key] = true
+		out = append(out, name)
+		if len(out) >= maxIngredientSearches {
+			break
+		}
+	}
+	return out
+}
+
 // FindByIngredients returns up to maxRecipes curated recipes matching the
 // detected ingredients and preferences, mapped to the app's recipe shape.
 func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeInput, maxRecipes int) ([]anthropic.Recipe, error) {
@@ -133,30 +167,43 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 		return nil, fmt.Errorf("%w: preferences not expressible as catalog filters", ErrUnavailable)
 	}
 
-	anchors, resolvedCount := c.resolveAnchorsVerbose(ctx, input.Ingredients)
+	anchors := anchorNames(input.Ingredients)
 	if len(anchors) == 0 {
-		slog.Info("recipe-api diag", "stage", "resolve", "names", len(input.Ingredients), "resolved", 0)
-		return nil, fmt.Errorf("%w: no detected ingredients resolved", ErrUnavailable)
+		return nil, fmt.Errorf("%w: no searchable ingredients", ErrUnavailable)
 	}
 
-	// ingredients= is ALL-match, so start specific and relax: 3 anchors, 2, 1.
-	var candidates []searchResult
-	searchCounts := map[int]int{}
-	for n := min(3, len(anchors)); n >= 1; n-- {
-		results, err := c.search(ctx, anchors[:n], plan)
+	// Free-text search each anchor and rank recipes by overlap — how many of
+	// the user's ingredients each recipe matches. A recipe surfacing for
+	// chicken AND rice AND spinach is a far better fridge match than one that
+	// only matched a single ingredient.
+	overlap := map[string]int{}
+	byID := map[string]searchResult{}
+	var searchHits int
+	for _, name := range anchors {
+		results, err := c.qSearch(ctx, name, plan)
 		if err != nil {
-			slog.Info("recipe-api diag", "stage", "search", "anchors", n, "err", err.Error())
-			return nil, err
+			if errors.Is(err, ErrUnavailable) {
+				break // 429 cool-down: proceed with whatever we gathered
+			}
+			continue // one failed search shouldn't sink the rest
 		}
-		searchCounts[n] = len(results)
-		if len(results) > 0 {
-			candidates = results
-			break
+		searchHits += len(results)
+		for _, r := range results {
+			overlap[r.ID]++
+			byID[r.ID] = r
 		}
 	}
+
+	candidates := make([]searchResult, 0, len(byID))
+	for id := range byID {
+		candidates = append(candidates, byID[id])
+	}
+	sort.SliceStable(candidates, func(a, b int) bool {
+		return overlap[candidates[a].ID] > overlap[candidates[b].ID]
+	})
 
 	var recipes []anthropic.Recipe
-	var passed, detailErrors int
+	var passed, detailErrors, topOverlap int
 	creditBlocked := false
 	for _, cand := range candidates {
 		if len(recipes) >= maxRecipes {
@@ -173,108 +220,20 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 				break // credits gone mid-request: keep what we have
 			}
 			detailErrors++
-			continue // one bad recipe shouldn't sink the rest
+			continue
+		}
+		if overlap[cand.ID] > topOverlap {
+			topOverlap = overlap[cand.ID]
 		}
 		recipes = append(recipes, detail)
 	}
 
 	slog.Info("recipe-api diag",
-		"names", len(input.Ingredients), "resolved", resolvedCount,
-		"anchors", len(anchors),
-		"search3", searchCounts[3], "search2", searchCounts[2], "search1", searchCounts[1],
-		"candidates", len(candidates), "passed_filters", passed,
-		"detail_errors", detailErrors, "credit_blocked", creditBlocked,
-		"returned", len(recipes))
+		"anchors", len(anchors), "search_hits", searchHits,
+		"unique_candidates", len(candidates), "passed_filters", passed,
+		"top_overlap", topOverlap, "detail_errors", detailErrors,
+		"credit_blocked", creditBlocked, "returned", len(recipes))
 	return recipes, nil
-}
-
-// resolveAnchorsVerbose maps free-text detected names to ingredient UUIDs and
-// orders them so proteins, then produce/staples, lead the ALL-match search.
-// Returns the ordered UUIDs and how many distinct names resolved.
-func (c *Client) resolveAnchorsVerbose(ctx context.Context, names []string) ([]string, int) {
-	if len(names) > 8 {
-		names = names[:8] // bound lookup fan-out per request
-	}
-	resolved := make([]resolvedIngredient, len(names))
-	var wg sync.WaitGroup
-	sem := make(chan struct{}, 4)
-	for i, name := range names {
-		wg.Add(1)
-		go func(i int, name string) {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
-			resolved[i] = c.resolveIngredient(ctx, name)
-		}(i, name)
-	}
-	wg.Wait()
-
-	var hits []resolvedIngredient
-	for _, r := range resolved {
-		if r.ID != "" {
-			hits = append(hits, r)
-		}
-	}
-	sort.SliceStable(hits, func(a, b int) bool {
-		return categoryRank(hits[a].Category) < categoryRank(hits[b].Category)
-	})
-	ids := make([]string, len(hits))
-	for i, h := range hits {
-		ids[i] = h.ID
-	}
-	return ids, len(hits)
-}
-
-func categoryRank(category string) int {
-	c := strings.ToLower(category)
-	switch {
-	case strings.Contains(c, "meat"), strings.Contains(c, "poultry"),
-		strings.Contains(c, "seafood"), strings.Contains(c, "fish"):
-		return 0
-	case strings.Contains(c, "vegetable"), strings.Contains(c, "legume"),
-		strings.Contains(c, "grain"), strings.Contains(c, "pasta"):
-		return 1
-	default:
-		return 2
-	}
-}
-
-func (c *Client) resolveIngredient(ctx context.Context, name string) resolvedIngredient {
-	key := strings.ToLower(strings.TrimSpace(name))
-	c.mu.Lock()
-	if r, ok := c.ingredients[key]; ok {
-		c.mu.Unlock()
-		return r
-	}
-	c.mu.Unlock()
-
-	r := c.lookupIngredient(ctx, key)
-	// Vision names are often compound ("cheddar cheese"); retry on the head
-	// noun before giving up.
-	if r.ID == "" {
-		if words := strings.Fields(key); len(words) > 1 {
-			r = c.lookupIngredient(ctx, words[len(words)-1])
-		}
-	}
-	c.mu.Lock()
-	c.ingredients[key] = r // cache misses too — the catalog is stable
-	c.mu.Unlock()
-	return r
-}
-
-func (c *Client) lookupIngredient(ctx context.Context, q string) resolvedIngredient {
-	var resp struct {
-		Data []struct {
-			ID       string `json:"id"`
-			Name     string `json:"name"`
-			Category string `json:"category"`
-		} `json:"data"`
-	}
-	params := url.Values{"q": {q}, "per_page": {"1"}}
-	if err := c.get(ctx, "/ingredients", params, &resp); err != nil || len(resp.Data) == 0 {
-		return resolvedIngredient{}
-	}
-	return resolvedIngredient{ID: resp.Data[0].ID, Category: resp.Data[0].Category}
 }
 
 type searchResult struct {
@@ -308,10 +267,10 @@ func (r searchResult) passes(plan searchPlan) bool {
 	return true
 }
 
-func (c *Client) search(ctx context.Context, ingredientIDs []string, plan searchPlan) ([]searchResult, error) {
+func (c *Client) qSearch(ctx context.Context, name string, plan searchPlan) ([]searchResult, error) {
 	params := url.Values{
-		"ingredients": {strings.Join(ingredientIDs, ",")},
-		"per_page":    {"20"},
+		"q":        {name},
+		"per_page": {strconv.Itoa(searchPageSize)},
 	}
 	if len(plan.dietaryFlags) > 0 {
 		params.Set("dietary", strings.Join(plan.dietaryFlags, ","))
@@ -516,11 +475,4 @@ func truncate(s string, n int) string {
 		return s
 	}
 	return s[:n] + "..."
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
