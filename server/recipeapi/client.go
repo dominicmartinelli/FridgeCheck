@@ -76,9 +76,8 @@ var dietaryFlagMap = map[string]string{
 	"Gluten-Free": "Gluten-Free",
 }
 
-// Allergies enforced by requiring the matching "-Free" flag on the recipe.
-// Allergies absent from this map can't be guaranteed against the catalog, so
-// the curated path is skipped entirely (Claude handles them in the prompt).
+// Allergies with a reliable "-Free" catalog flag: require the flag at search
+// time (free and trustworthy).
 var allergyFlagMap = map[string]string{
 	"Nuts":    "Nut-Free",
 	"Peanuts": "Peanut-Free",
@@ -89,25 +88,43 @@ var allergyFlagMap = map[string]string{
 	"Wheat":   "Gluten-Free",
 }
 
+// Allergens without a dedicated "-Free" flag are handled by exclusion instead
+// of skipping: any recipe whose ingredient list contains one of these
+// keywords is dropped. The terms are distinctive enough for reliable
+// substring matching (unlike "nut", which would catch "coconut"/"nutmeg" —
+// that one is covered by the Nut-Free flag above).
+var allergenKeywords = map[string][]string{
+	"Shellfish": {"shrimp", "prawn", "crab", "lobster", "crawfish", "crayfish",
+		"scallop", "clam", "mussel", "oyster", "squid", "calamari", "octopus", "shellfish"},
+	"Fish": {"fish", "salmon", "tuna", "cod", "tilapia", "halibut", "anchovy",
+		"sardine", "trout", "snapper", "mackerel", "herring", "pollock", "haddock"},
+	"Sesame": {"sesame", "tahini"},
+}
+
 type searchPlan struct {
-	dietaryFlags  []string // dietary= query param
-	requiredFlags []string // recipe must carry all of these
-	maxCarbs      int      // 0 = no filter
-	maxFat        int
-	cuisine       string
-	allergyWords  []string // lowercase keywords matched against not_suitable_for
+	dietaryFlags    []string // dietary= query param
+	requiredFlags   []string // recipe must carry all of these
+	maxCarbs        int      // 0 = no filter
+	maxFat          int
+	cuisine         string
+	allergyWords    []string // lowercase keywords matched against not_suitable_for
+	excludeKeywords []string // drop any recipe whose ingredients contain these
 }
 
 // planFor maps app preferences onto API filters. ok=false means a constraint
-// can't be expressed safely and the curated path must be skipped.
+// can't be expressed safely and the curated path must be skipped. Allergies
+// never cause a skip: each is enforced either by a required "-Free" flag or by
+// ingredient-keyword exclusion (or both).
 func planFor(input anthropic.RecipeInput) (searchPlan, bool) {
 	var p searchPlan
 	for _, a := range input.Allergies {
-		flag, known := allergyFlagMap[a]
-		if !known {
-			return p, false // e.g. Shellfish, Fish, Sesame
+		if flag, ok := allergyFlagMap[a]; ok {
+			p.requiredFlags = append(p.requiredFlags, flag)
 		}
-		p.requiredFlags = append(p.requiredFlags, flag)
+		if kws, ok := allergenKeywords[a]; ok {
+			p.excludeKeywords = append(p.excludeKeywords, kws...)
+		}
+		// not_suitable_for prefilter (free, search-time) for every allergy.
 		p.allergyWords = append(p.allergyWords, strings.TrimSuffix(strings.ToLower(a), "s"))
 	}
 	for _, d := range input.DietaryRestrictions {
@@ -203,7 +220,7 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 	})
 
 	var recipes []anthropic.Recipe
-	var passed, detailErrors, topOverlap int
+	var passed, detailErrors, allergenExcluded, topOverlap int
 	creditBlocked := false
 	for _, cand := range candidates {
 		if len(recipes) >= maxRecipes {
@@ -222,6 +239,13 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 			detailErrors++
 			continue
 		}
+		// Allergy safety net: the full ingredient list is only available here,
+		// so drop any recipe that actually contains an excluded allergen even
+		// if the catalog didn't flag it in not_suitable_for.
+		if containsAllergen(detail, plan.excludeKeywords) {
+			allergenExcluded++
+			continue
+		}
 		if overlap[cand.ID] > topOverlap {
 			topOverlap = overlap[cand.ID]
 		}
@@ -231,9 +255,26 @@ func (c *Client) FindByIngredients(ctx context.Context, input anthropic.RecipeIn
 	slog.Info("recipe-api diag",
 		"anchors", len(anchors), "search_hits", searchHits,
 		"unique_candidates", len(candidates), "passed_filters", passed,
-		"top_overlap", topOverlap, "detail_errors", detailErrors,
-		"credit_blocked", creditBlocked, "returned", len(recipes))
+		"allergen_excluded", allergenExcluded, "top_overlap", topOverlap,
+		"detail_errors", detailErrors, "credit_blocked", creditBlocked,
+		"returned", len(recipes))
 	return recipes, nil
+}
+
+// containsAllergen reports whether any excluded keyword appears in the
+// recipe's title, summary, or ingredient lines (case-insensitive). Used as the
+// final allergy gate for allergens without a reliable catalog flag.
+func containsAllergen(r anthropic.Recipe, keywords []string) bool {
+	if len(keywords) == 0 {
+		return false
+	}
+	hay := strings.ToLower(r.Title + "\n" + r.Summary + "\n" + strings.Join(r.Ingredients, "\n"))
+	for _, kw := range keywords {
+		if strings.Contains(hay, kw) {
+			return true
+		}
+	}
+	return false
 }
 
 type searchResult struct {
