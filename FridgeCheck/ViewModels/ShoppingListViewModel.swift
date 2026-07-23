@@ -52,9 +52,9 @@ final class ShoppingListViewModel {
     }
 
     func addMissingIngredients(recipe: Recipe, pantryItems: [PantryItem], modelContext: ModelContext) {
-        let pantryWordSets = pantryItems.map { Self.words(of: $0.name) }
+        let pantryWordSets = pantryItems.map { $0.name.ingredientWords }
         for ingredient in recipe.ingredients {
-            let ingredientWords = Self.words(of: ingredient)
+            let ingredientWords = ingredient.ingredientWords
             // Match on whole words so pantry "egg" doesn't swallow "eggplant":
             // a pantry item counts when all of its words appear in the
             // ingredient text (e.g. "olive oil" matches "2 tbsp olive oil").
@@ -68,7 +68,4 @@ final class ShoppingListViewModel {
         }
     }
 
-    private static func words(of text: String) -> Set<String> {
-        Set(text.lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init))
-    }
 }

@@ -118,6 +118,18 @@ final class ScanViewModel {
         }
     }
 
+    /// Pantry items that didn't appear anywhere in this scan — candidates for
+    /// "used up" cleanup. Compares against every detected ingredient, selected
+    /// or not: being seen in the fridge is what matters, not whether the user
+    /// wants it in a recipe.
+    func pantryItemsMissingFromScan(_ pantryItems: [PantryItem]) -> [PantryItem] {
+        guard !detectedIngredients.isEmpty else { return [] }
+        return PantryItem.itemsMissing(
+            fromScan: detectedIngredients.map(\.name),
+            in: pantryItems
+        )
+    }
+
     func removeImage(at index: Int) {
         guard capturedImages.indices.contains(index) else { return }
         capturedImages.remove(at: index)

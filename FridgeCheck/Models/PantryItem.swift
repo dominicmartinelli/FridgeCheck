@@ -37,6 +37,23 @@ final class PantryItem {
 }
 
 extension PantryItem {
+    /// Pantry items not matched by any scanned ingredient name — candidates
+    /// for "you've used this up" cleanup after a scan. Matches loosely on
+    /// whole words in either direction (pantry "Whole Milk" counts as seen
+    /// when the scan says "Milk") so camera noise doesn't flag items the
+    /// user still has.
+    static func itemsMissing(fromScan scannedNames: [String], in items: [PantryItem]) -> [PantryItem] {
+        let scanWordSets = scannedNames.map(\.ingredientWords).filter { !$0.isEmpty }
+        guard !scanWordSets.isEmpty else { return [] }
+        return items.filter { item in
+            let itemWords = item.name.ingredientWords
+            guard !itemWords.isEmpty else { return false }
+            return !scanWordSets.contains { scanWords in
+                scanWords.isSubset(of: itemWords) || itemWords.isSubset(of: scanWords)
+            }
+        }
+    }
+
     /// Inserts a pantry item, or refreshes the existing one when a
     /// case-insensitive name match is already in the store — rescanning the
     /// same fridge must not fill the pantry with duplicates.

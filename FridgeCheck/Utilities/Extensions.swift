@@ -63,6 +63,12 @@ extension Color {
 }
 
 extension String {
+    /// Lowercased word set for loose ingredient matching
+    /// ("2 tbsp Olive Oil" -> {"tbsp", "olive", "oil"}).
+    var ingredientWords: Set<String> {
+        Set(lowercased().split(whereSeparator: { !$0.isLetter }).map(String.init))
+    }
+
     static let ingredientCategories = [
         "Produce", "Dairy", "Meat", "Seafood", "Grains",
         "Condiments", "Beverages", "Snacks", "Frozen", "Other"

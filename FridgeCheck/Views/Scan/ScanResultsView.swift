@@ -10,6 +10,7 @@ struct ScanResultsView: View {
     @State private var showAddedToPantryConfirmation = false
     @State private var bannerTask: Task<Void, Never>?
     @State private var addedToPantry = false
+    @State private var scanDiff: ScanDiffCandidates?
 
     private var userPreferences: UserPreferences? {
         preferences.first
@@ -62,6 +63,14 @@ struct ScanResultsView: View {
         }
         .navigationDestination(isPresented: $navigateToRecipes) {
             RecipeSuggestionsView(viewModel: viewModel)
+        }
+        // sheet(item:), not sheet(isPresented:): the isPresented content
+        // closure can evaluate against pre-tap state and present an empty
+        // list; item-driven presentation always sees the value that
+        // triggered it.
+        .sheet(item: $scanDiff) { diff in
+            ScanDiffReviewView(items: diff.items)
+                .presentationDetents([.medium, .large])
         }
         .task {
             if !viewModel.capturedImages.isEmpty && viewModel.detectedIngredients.isEmpty && !viewModel.isAnalyzing {
@@ -238,16 +247,23 @@ struct ScanResultsView: View {
                 .disabled(selectedCount == 0)
 
                 Button {
+                    // Diff before the upsert mutates the pantry, though name
+                    // matching makes the order mostly cosmetic.
+                    let missing = viewModel.pantryItemsMissingFromScan(pantryItems)
                     viewModel.addIngredientsToPantry(modelContext: modelContext)
                     addedToPantry = true
-                    showAddedToPantryConfirmation = true
-                    bannerTask?.cancel()
-                    bannerTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(2500))
-                        guard !Task.isCancelled else { return }
-                        withAnimation {
-                            showAddedToPantryConfirmation = false
+                    if missing.isEmpty {
+                        showAddedToPantryConfirmation = true
+                        bannerTask?.cancel()
+                        bannerTask = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(2500))
+                            guard !Task.isCancelled else { return }
+                            withAnimation {
+                                showAddedToPantryConfirmation = false
+                            }
                         }
+                    } else {
+                        scanDiff = ScanDiffCandidates(items: missing)
                     }
                 } label: {
                     Label(
@@ -310,6 +326,11 @@ struct ScanResultsView: View {
             }
         }
     }
+}
+
+private struct ScanDiffCandidates: Identifiable {
+    let id = UUID()
+    let items: [PantryItem]
 }
 
 // MARK: - Ingredient Row
