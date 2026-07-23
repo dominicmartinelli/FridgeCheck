@@ -27,7 +27,7 @@ deploy: build-linux
 	$(SCP) fridgecheck-server-linux $(GCP_USER)@$(GCP_IP):/tmp/fridgecheck-server
 	$(SSH) $(GCP_USER)@$(GCP_IP) "sudo mv /tmp/fridgecheck-server $(DEPLOY_DIR)/fridgecheck-server && sudo chmod +x $(DEPLOY_DIR)/fridgecheck-server && sudo systemctl start fridgecheck"
 	$(SCP) fridge.caddy $(GCP_USER)@$(GCP_IP):/tmp/fridge.caddy
-	$(SSH) $(GCP_USER)@$(GCP_IP) "sudo mkdir -p /etc/caddy/sites.d && sudo install -o root -g root -m 644 /tmp/fridge.caddy /etc/caddy/sites.d/fridge.caddy && rm /tmp/fridge.caddy && sudo systemctl reload caddy"
+	$(SSH) $(GCP_USER)@$(GCP_IP) "sudo mkdir -p /etc/caddy/sites.d && sudo install -o root -g root -m 644 /tmp/fridge.caddy /etc/caddy/sites.d/fridge.caddy && rm /tmp/fridge.caddy && sudo caddy validate --adapter caddyfile --config /etc/caddy/Caddyfile && sudo systemctl reload caddy"
 	@echo "Deployed to $(GCP_IP)"
 
 test:

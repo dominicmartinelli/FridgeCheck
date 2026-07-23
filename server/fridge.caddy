@@ -1,4 +1,9 @@
 fridge.dkm.net {
+    # Coraza WAF (OWASP CRS), blocking mode. The waf_enforce snippet is provided
+    # by the infra repo's watchlist/startup.sh on the shared VM. If a legitimate
+    # API call ever gets a false-positive 403, drop to `import waf_detect`
+    # (log-only) and check: journalctl -u caddy | grep http.handlers.waf
+    import waf_enforce
     encode gzip zstd
     reverse_proxy 127.0.0.1:8082
     tls {
