@@ -14,6 +14,9 @@ extension Date {
     }
 
     var formatted_relative: String {
+        // Sub-minute intervals render as the nonsensical "in 0s" — freshly
+        // added pantry items showed "Added in 0s".
+        guard abs(timeIntervalSinceNow) >= 60 else { return "just now" }
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .abbreviated
         return formatter.localizedString(for: self, relativeTo: Date())

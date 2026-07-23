@@ -9,6 +9,7 @@ struct ScanResultsView: View {
     @State private var navigateToRecipes = false
     @State private var showAddedToPantryConfirmation = false
     @State private var bannerTask: Task<Void, Never>?
+    @State private var addedToPantry = false
 
     private var userPreferences: UserPreferences? {
         preferences.first
@@ -238,6 +239,7 @@ struct ScanResultsView: View {
 
                 Button {
                     viewModel.addIngredientsToPantry(modelContext: modelContext)
+                    addedToPantry = true
                     showAddedToPantryConfirmation = true
                     bannerTask?.cancel()
                     bannerTask = Task { @MainActor in
@@ -248,7 +250,10 @@ struct ScanResultsView: View {
                         }
                     }
                 } label: {
-                    Label("Add Selected to Pantry", systemImage: "refrigerator")
+                    Label(
+                        addedToPantry ? "Added to Pantry" : "Add Selected to Pantry",
+                        systemImage: addedToPantry ? "checkmark" : "refrigerator"
+                    )
                         .font(.subheadline)
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
@@ -257,7 +262,11 @@ struct ScanResultsView: View {
                         .foregroundStyle(.primary)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                 }
-                .disabled(selectedCount == 0)
+                .disabled(selectedCount == 0 || addedToPantry)
+                // Changing the selection makes a re-add meaningful again.
+                .onChange(of: selectedCount) {
+                    addedToPantry = false
+                }
             }
             .padding(.horizontal)
             .padding(.bottom, 8)

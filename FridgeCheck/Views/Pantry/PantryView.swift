@@ -6,6 +6,9 @@ struct PantryView: View {
     @Query(sort: \PantryItem.name) private var pantryItems: [PantryItem]
     @State private var viewModel = PantryViewModel()
     @State private var showAddItem = false
+    @State private var editingItem: PantryItem?
+    @State private var selection = Set<UUID>()
+    @State private var editMode: EditMode = .inactive
 
     var body: some View {
         NavigationStack {
@@ -22,7 +25,7 @@ struct PantryView: View {
                         .buttonStyle(.borderedProminent)
                     }
                 } else {
-                    List {
+                    List(selection: $selection) {
                         // Category filter
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -52,27 +55,14 @@ struct PantryView: View {
                         }
                         .listRowInsets(EdgeInsets())
                         .listRowBackground(Color.clear)
+                        .selectionDisabled()
 
                         // Grouped items
                         ForEach(viewModel.groupedItems(pantryItems), id: \.0) { category, items in
                             Section {
                                 ForEach(items) { item in
-                                    PantryItemRow(item: item)
-                                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                            Button(role: .destructive) {
-                                                viewModel.deleteItem(item, modelContext: modelContext)
-                                            } label: {
-                                                Label("Delete", systemImage: "trash")
-                                            }
-                                        }
-                                        .swipeActions(edge: .leading) {
-                                            Button {
-                                                viewModel.addToShoppingList(item, modelContext: modelContext)
-                                            } label: {
-                                                Label("Shopping List", systemImage: "cart.badge.plus")
-                                            }
-                                            .tint(.blue)
-                                        }
+                                    itemRow(item)
+                                        .tag(item.id)
                                 }
                             } header: {
                                 HStack {
@@ -85,11 +75,42 @@ struct PantryView: View {
                         }
                     }
                     .searchable(text: $viewModel.searchText, prompt: "Search pantry")
+                    .safeAreaInset(edge: .bottom) {
+                        if editMode.isEditing {
+                            bulkActionBar
+                        }
+                    }
                 }
             }
+            .environment(\.editMode, $editMode)
             .navigationTitle("Pantry")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                if !pantryItems.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        // Not EditButton: toolbar items don't see the injected
+                        // editMode environment, so it would toggle its own
+                        // state and leave the list out of edit mode.
+                        Button(editMode.isEditing ? "Done" : "Edit") {
+                            withAnimation {
+                                editMode = editMode.isEditing ? .inactive : .active
+                            }
+                        }
+                    }
+                }
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    if !pantryItems.isEmpty {
+                        Menu {
+                            Button(role: .destructive) {
+                                viewModel.clearExpired(pantryItems, modelContext: modelContext)
+                            } label: {
+                                Label("Clear Expired Items", systemImage: "trash.slash")
+                            }
+                            .disabled(!pantryItems.contains(where: \.isExpired))
+                        } label: {
+                            Image(systemName: "ellipsis.circle")
+                                .accessibilityLabel("More")
+                        }
+                    }
                     Button {
                         showAddItem = true
                     } label: {
@@ -100,7 +121,84 @@ struct PantryView: View {
             .sheet(isPresented: $showAddItem) {
                 AddPantryItemView()
             }
+            .sheet(item: $editingItem) { item in
+                AddPantryItemView(item: item)
+            }
+            .onChange(of: editMode) {
+                if !editMode.isEditing {
+                    selection.removeAll()
+                }
+            }
         }
+    }
+
+    @ViewBuilder
+    private func itemRow(_ item: PantryItem) -> some View {
+        let row = PantryItemRow(item: item)
+            .contentShape(Rectangle())
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                Button(role: .destructive) {
+                    viewModel.deleteItem(item, modelContext: modelContext)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+            .swipeActions(edge: .leading) {
+                Button {
+                    viewModel.addToShoppingList(item, modelContext: modelContext)
+                } label: {
+                    Label("Shopping List", systemImage: "cart.badge.plus")
+                }
+                .tint(.blue)
+            }
+            .contextMenu {
+                Button {
+                    editingItem = item
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                Button {
+                    viewModel.addToShoppingList(item, modelContext: modelContext)
+                } label: {
+                    Label("Add to Shopping List", systemImage: "cart.badge.plus")
+                }
+                Button(role: .destructive) {
+                    viewModel.deleteItem(item, modelContext: modelContext)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+
+        // A plain onTapGesture would swallow the taps edit mode needs for
+        // selection, so only attach it outside edit mode.
+        if editMode.isEditing {
+            row
+        } else {
+            row.onTapGesture {
+                editingItem = item
+            }
+        }
+    }
+
+    private var bulkActionBar: some View {
+        VStack(spacing: 0) {
+            Divider()
+            Button(role: .destructive) {
+                withAnimation {
+                    viewModel.deleteItems(ids: selection, from: pantryItems, modelContext: modelContext)
+                    selection.removeAll()
+                }
+            } label: {
+                Text("Delete Selected (\(selection.count))")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 46)
+            }
+            .disabled(selection.isEmpty)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .background(.ultraThinMaterial)
     }
 }
 

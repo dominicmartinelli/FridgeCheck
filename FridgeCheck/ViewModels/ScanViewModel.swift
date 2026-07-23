@@ -109,12 +109,12 @@ final class ScanViewModel {
     func addIngredientsToPantry(modelContext: ModelContext) {
         let selected = detectedIngredients.filter(\.isSelected)
         for ingredient in selected {
-            let pantryItem = PantryItem(
+            PantryItem.upsert(
                 name: ingredient.name,
                 category: ingredient.category,
-                quantity: ingredient.estimatedQuantity
+                quantity: ingredient.estimatedQuantity,
+                in: modelContext
             )
-            modelContext.insert(pantryItem)
         }
     }
 

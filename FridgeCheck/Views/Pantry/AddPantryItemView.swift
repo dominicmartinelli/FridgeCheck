@@ -1,15 +1,28 @@
 import SwiftUI
 import SwiftData
 
+/// Add a new pantry item, or edit an existing one when `item` is provided.
 struct AddPantryItemView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @State private var name = ""
-    @State private var category = "Other"
-    @State private var quantity = ""
-    @State private var hasExpiryDate = false
-    @State private var expiryDate = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: Date()) ?? Date()
+    private let item: PantryItem?
+
+    @State private var name: String
+    @State private var category: String
+    @State private var quantity: String
+    @State private var hasExpiryDate: Bool
+    @State private var expiryDate: Date
+
+    init(item: PantryItem? = nil) {
+        self.item = item
+        _name = State(initialValue: item?.name ?? "")
+        _category = State(initialValue: item?.category ?? "Other")
+        _quantity = State(initialValue: item?.quantity ?? "")
+        _hasExpiryDate = State(initialValue: item?.expiryDate != nil)
+        _expiryDate = State(initialValue: item?.expiryDate
+            ?? Calendar.current.date(byAdding: .weekOfYear, value: 1, to: Date()) ?? Date())
+    }
 
     var body: some View {
         NavigationStack {
@@ -35,7 +48,7 @@ struct AddPantryItemView: View {
                     }
                 }
             }
-            .navigationTitle("Add Pantry Item")
+            .navigationTitle(item == nil ? "Add Pantry Item" : "Edit Pantry Item")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -44,8 +57,8 @@ struct AddPantryItemView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
-                        addItem()
+                    Button(item == nil ? "Add" : "Save") {
+                        save()
                     }
                     .disabled(name.isEmpty)
                     .fontWeight(.semibold)
@@ -54,14 +67,21 @@ struct AddPantryItemView: View {
         }
     }
 
-    private func addItem() {
-        let item = PantryItem(
-            name: name,
-            category: category,
-            quantity: quantity,
-            expiryDate: hasExpiryDate ? expiryDate : nil
-        )
-        modelContext.insert(item)
+    private func save() {
+        if let item {
+            item.name = name
+            item.category = category
+            item.quantity = quantity
+            item.expiryDate = hasExpiryDate ? expiryDate : nil
+        } else {
+            PantryItem.upsert(
+                name: name,
+                category: category,
+                quantity: quantity,
+                expiryDate: hasExpiryDate ? expiryDate : nil,
+                in: modelContext
+            )
+        }
         dismiss()
     }
 }

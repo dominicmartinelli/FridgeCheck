@@ -32,6 +32,18 @@ final class PantryViewModel {
         modelContext.delete(item)
     }
 
+    func deleteItems(ids: Set<UUID>, from items: [PantryItem], modelContext: ModelContext) {
+        for item in items where ids.contains(item.id) {
+            modelContext.delete(item)
+        }
+    }
+
+    func clearExpired(_ items: [PantryItem], modelContext: ModelContext) {
+        for item in items where item.isExpired {
+            modelContext.delete(item)
+        }
+    }
+
     func addToShoppingList(_ item: PantryItem, modelContext: ModelContext) {
         let shoppingItem = ShoppingListItem(
             name: item.name,

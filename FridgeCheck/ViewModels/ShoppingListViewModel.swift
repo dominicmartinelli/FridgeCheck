@@ -41,12 +41,12 @@ final class ShoppingListViewModel {
 
     func addCheckedItemsToPantry(from items: [ShoppingListItem], modelContext: ModelContext) {
         for item in items where item.isChecked {
-            let pantryItem = PantryItem(
+            PantryItem.upsert(
                 name: item.name,
                 category: item.category,
-                quantity: item.quantity
+                quantity: item.quantity,
+                in: modelContext
             )
-            modelContext.insert(pantryItem)
             modelContext.delete(item)
         }
     }
